@@ -1,0 +1,26 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:c="/lib/credentials" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+  xmlns:f2="/org/jenkinsci/plugins/github_branch_source/form">
+  <j:if test="${descriptor.apiUriSelectable}">
+    <f:entry title="${%API endpoint}" field="apiUri">
+      <f:select/>
+    </f:entry>
+  </j:if>
+  <f:entry title="${%Repository}" field="repository">
+    <!-- TODO switch back to f:select once Jenkins core has JENKINS-42443 -->
+    <f2:select/>
+  </f:entry>
+  <f:advanced>
+    <j:if test="${!descriptor.apiUriSelectable}">
+      <f:entry title="${%API endpoint}" field="apiUri">
+        <f:select/>
+      </f:entry>
+    </j:if>
+    <f:entry title="${%Include branches}" field="includes">
+      <f:textbox default="${descriptor.defaultIncludes}"/>
+    </f:entry>
+    <f:entry title="${%Exclude branches}" field="excludes">
+      <f:textbox default="${descriptor.defaultExcludes}"/>
+    </f:entry>
+  </f:advanced>
+</j:jelly>

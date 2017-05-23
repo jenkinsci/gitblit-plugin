@@ -12,6 +12,9 @@ import hudson.util.ListBoxModel;
 import jenkins.scm.api.SCMNavigator;
 import jenkins.scm.api.SCMNavigatorDescriptor;
 import jenkins.scm.api.SCMSourceObserver;
+import jenkins.scm.api.SCMSourceObserver.ProjectObserver;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 
 public class GitBlitSCMNavigator extends SCMNavigator {
 
@@ -38,7 +41,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 	
 	@Override
 	protected String id() {
-		return "GitBlit id";
+		return "GitBlit";
 	}
 
 	@Override
@@ -49,9 +52,22 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		// Input data validation
 		
 		//Connect to GitBlit and scan the repos for Jenkinsfile's
-		String message = Connector.connect(apiUri);
-		logger.println(message);
+		logger.println("Connecting to GitBlit api: "+apiUri+":");
+		JSONObject response = Connector.connect(apiUri);
+		logger.println("Response: "+response.toString(4));
 		
+		JSONArray repoURLs = response.names();
+		
+		for (int i=0;i<repoURLs.size();i++) {
+			String repoURL = repoURLs.getString(i);
+			logger.println("Adding repo: "+repoURLs.get(i));
+			ProjectObserver projectObserver = observer.observe(repoURLs.getString(i));
+			
+			projectObserver.addSource(new GitBlitSCMSource(getId(),repoURL));
+			projectObserver.complete();
+		}
+		
+		return;
 	}
 	
 	@Symbol("gitblit")
@@ -73,7 +89,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 
         @Override
         public String getDescription() {
-        	super.createCategories();
+//        	super.createCategories();
             return "Scans a GitBlit organization for all repositories with a Jenkinsfile.";
         }
         
