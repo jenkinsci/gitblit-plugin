@@ -2,15 +2,23 @@ package com.tsystems.sbs.gitblitbranchsource;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 import hudson.Extension;
+import hudson.Util;
+import hudson.model.Action;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import jenkins.scm.api.SCMNavigator;
 import jenkins.scm.api.SCMNavigatorDescriptor;
+import jenkins.scm.api.SCMNavigatorEvent;
+import jenkins.scm.api.SCMNavigatorOwner;
 import jenkins.scm.api.SCMSourceObserver;
 import jenkins.scm.api.SCMSourceObserver.ProjectObserver;
 import net.sf.json.JSONArray;
@@ -21,9 +29,30 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 	private final String apiUri;
 	private String pattern = ".*";
 	
+	private String includes;
+	private String excludes;
+	
 	@DataBoundConstructor
 	public GitBlitSCMNavigator (String apiUri){
-		this.apiUri = apiUri;
+		this.apiUri = Util.fixEmptyAndTrim(apiUri);
+	}
+	
+	public String getIncludes() {
+		return includes != null ? includes : ".*";
+	}
+	
+	@DataBoundSetter
+	public void setIncludes(String includes) {
+		this.includes = includes.equals(".*") ? null : includes;
+	}
+	
+	public String getExcludes() {
+		return excludes != null ? excludes : ".*";
+	}
+	
+	@DataBoundSetter
+	public void setExcludes(String excludes) {
+		this.excludes = excludes.equals(".*") ? null : excludes;
 	}
 	
 	public String getApiUri() {
@@ -34,6 +63,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		return pattern;
 	}
 	
+	@DataBoundSetter
 	public void setPattern(String pattern) {
 //		Pattern.compile(pattern);
 		this.pattern = pattern;
@@ -41,33 +71,68 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 	
 	@Override
 	protected String id() {
-		return "GitBlit";
+		// Generate the ID of the thing being navigated.
+        // Typically this will, at a minimum consist of the URL of the remote server
+        // For GitHub it would probably also include the GitHub Organization being navigated
+        // For BitBucket it could include the owning team as well as the project (if navigation is scoped to
+        // a single project within a team) or just the owning team (if navigation is scoped to all repositories
+        // in a team)
+        //
+        // See the Javadoc for more details.
+		return apiUri;//TODO: set a more complex ID
 	}
 
+	
+	//This method is called when the "Folder Computation" action is triggered
 	@Override
 	public void visitSources(SCMSourceObserver observer) throws IOException, InterruptedException {
 		TaskListener listener = observer.getListener();
 		PrintStream logger = listener.getLogger();
 		
-		// Input data validation
+		// TODO: Input data validation
+		
 		
 		//Connect to GitBlit and scan the repos for Jenkinsfile's
-		logger.println("Connecting to GitBlit api: "+apiUri+":");
-		JSONObject response = Connector.connect(apiUri);
+		String listRepositoriesSuffix = apiUri.endsWith("/") ? "rpc/?req=LIST_REPOSITORIES" : "/rpc/?req=LIST_REPOSITORIES";//Ensure that it ends with "/"
+		logger.println("Connecting to GitBlit api: " + apiUri + listRepositoriesSuffix + ":");
+		JSONObject response = Connector.connect(apiUri + listRepositoriesSuffix);
 		logger.println("Response: "+response.toString(4));
 		
 		JSONArray repoURLs = response.names();
 		
 		for (int i=0;i<repoURLs.size();i++) {
+			checkInterrupt();
 			String repoURL = repoURLs.getString(i);
-			logger.println("Adding repo: "+repoURLs.get(i));
-			ProjectObserver projectObserver = observer.observe(repoURLs.getString(i));
 			
-			projectObserver.addSource(new GitBlitSCMSource(getId(),repoURL));
-			projectObserver.complete();
+			String repoName = repoURL.replaceAll(".*\\/(\\S*).git","$1");
+			
+			//Filter the projects and add them only if they match the pattern
+			if(!Pattern.compile(pattern).matcher(repoName).matches()) {
+				logger.println("Ignoring repo: " + repoURL + " with name " + repoName);
+			} else {
+				logger.println("Adding repo: " + repoURL + " with name " + repoName);
+				ProjectObserver projectObserver = observer.observe(repoName);
+				
+				projectObserver.addSource(new GitBlitSCMSource(getId()+repoName,repoURL,repoName));
+				projectObserver.complete();
+			}
+			
 		}
 		
 		return;
+	}
+	
+	@Override
+	public List<Action> retrieveActions(SCMNavigatorOwner owner, SCMNavigatorEvent event, TaskListener listener) throws IOException, InterruptedException {
+		List<Action> result = new ArrayList<>();
+		// If your SCM provides support for metadata at the "SCMNavigator" level
+		// then you probably want to return at least a "jenkins.branch.MetadataAction"
+		// from this method. The listener can be used to log the interactions
+		// with the backing source control system.
+		//
+		// When you implement event support, if you have events when populating the
+		// action (if that will avoid extra network calls and give the same result)
+		return result;
 	}
 	
 	@Symbol("gitblit")
@@ -95,8 +160,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
         
         @Override
         public SCMNavigator newInstance(String name) {
-        	return new GitBlitSCMNavigator("");
-//            return new GitHubSCMNavigator("", name, "", GitHubSCMSource.DescriptorImpl.SAME);
+        	return new GitBlitSCMNavigator(name);//TODO: implement for GitBlit?
         }
 
         public ListBoxModel doFillApiUriItems() {
