@@ -11,18 +11,32 @@ import net.sf.json.JSONObject;
 
 public class Connector {
 	
-	public static JSONObject connect(String apiUri) throws IOException {
-		URL apiUrl = new URL(apiUri);
+	public static JSONObject listBranches(String gitblitUri) throws IOException {
+		if(!gitblitUri.endsWith("/"))
+			gitblitUri += "/";
+		
+		return connect(gitblitUri + "rpc/?req=LIST_BRANCHES");
+	}
+	
+	public static JSONObject listRepositories(String gitblitUri) throws IOException {
+		if(!gitblitUri.endsWith("/"))
+			gitblitUri += "/";
+		
+		return connect(gitblitUri + "rpc/?req=LIST_REPOSITORIES");
+	}
+	
+	private static JSONObject connect(String rpcFunctionUri) throws IOException {
+		URL rpcFunctionUrl = new URL(rpcFunctionUri);
 		
 		//TODO: Does Gitblit require credentials?
 		
-		HttpURLConnection connection = (HttpURLConnection) apiUrl.openConnection();
+		HttpURLConnection connection = (HttpURLConnection) rpcFunctionUrl.openConnection();
 		
 		InputStream stream = connection.getInputStream();
-		InputStreamReader isReader = new InputStreamReader(stream, "UTF-8"); 
-
-		//put output stream into a string
-		BufferedReader br = new BufferedReader(isReader );
+		InputStreamReader isReader = new InputStreamReader(stream, "UTF-8");
+		
+		//put outputStream into a string
+		BufferedReader br = new BufferedReader(isReader);
 		
 		try {
 			StringBuilder jsonString = new StringBuilder();
@@ -30,14 +44,15 @@ public class Connector {
 			while((line = br.readLine()) != null)
 				jsonString.append(line);
 			
-			JSONObject response = JSONObject.fromObject(jsonString.toString()); 
-		
+			JSONObject response = JSONObject.fromObject(jsonString.toString());
+			
 			return response;
 		} finally {
 			try { stream.close(); } catch (IOException e) { e.printStackTrace(); }
-			try { isReader.close(); } catch (IOException e) {e.printStackTrace(); }
+			try { isReader.close(); } catch (IOException e) { e.printStackTrace(); }
 			try { br.close(); } catch (IOException e) {e.printStackTrace(); }
 		}
+		
 	}
 	
 }

@@ -8,6 +8,7 @@ import java.util.List;
 import org.eclipse.jgit.transport.RefSpec;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import hudson.Extension;
@@ -22,13 +23,16 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 	/**
 	 * This dictates where the specific URL from which the source will be retrieved.
 	 */
-	private final String apiUri;
+	private final String gitblitUri;
 	private final String repository;
 	
+	private String includes = DescriptorImpl.defaultIncludes;
+	private String excludes = DescriptorImpl.defaultExcludes;
+	
 	@DataBoundConstructor
-	public GitBlitSCMSource(String id, String apiUri, String repository) {
+	public GitBlitSCMSource(String id, String gitblitUri, String repository) {
 		super(id);
-		this.apiUri = apiUri;
+		this.gitblitUri = gitblitUri;
 		this.repository = repository;
 	}
 
@@ -42,11 +46,11 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 	 */
 	@Override
 	public String getRemote() {
-		return apiUri;
+		return repository;
 	}
 	
-	public String getApiUri() {
-		return apiUri;
+	public String getGitblitUri() {
+		return gitblitUri;
 	}
 	
 	public String getRepository() {
@@ -55,12 +59,22 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 
 	@Override
 	public String getIncludes() {
-		return "*";//TODO: make this regex Pattern configurable
+		return includes;
+	}
+	
+	@DataBoundSetter
+	public void setIncludes(String includes) {
+		this.includes = includes;
 	}
 
 	@Override
 	public String getExcludes() {
-		return "";//TODO: make this regex Pattern configurable
+		return excludes;
+	}
+	
+	@DataBoundSetter
+	public void setExcludes(String excludes) {
+		this.excludes = excludes;
 	}
 	
 	@Override
@@ -81,13 +95,16 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 	@Extension
 	public static class DescriptorImpl extends SCMSourceDescriptor {
 
+		public static final String defaultIncludes = "*";
+        public static final String defaultExcludes = "";
+        
 		@Override
 		public String getDisplayName() {
 			return "GitBlit";
 		}
 		
 		//Jelly (GUI) method
-		public ListBoxModel doFillApiUriItems() {
+		public ListBoxModel doFillGitblitUriItems() {
 			ListBoxModel result = new ListBoxModel();
 			for(Endpoint e : GitBlitConfiguration.get().getEndpoints()) {
 				result.add(e.getName() == null ? e.getApiUri() : e.getName(), e.getApiUri());
@@ -96,21 +113,24 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 		}
 		
 		//Jelly (GUI) method
-		public ListBoxModel doFillRepositoryItems(@QueryParameter String apiUri) throws IOException {
-			
-			JSONObject response = Connector.connect(apiUri);
-			JSONArray repoURLs = response.names();
-			
+		public ListBoxModel doFillRepositoryItems(@QueryParameter String gitblitUri) throws IOException {
 			ListBoxModel model = new ListBoxModel();
 			
-			for(int i=0; i<repoURLs.size(); i++)
-				model.add(repoURLs.getString(i));
+			if (gitblitUri != null && !gitblitUri.isEmpty()) {
+				JSONObject response = Connector.listRepositories(gitblitUri);//Maybe we should list the repositories which match the organization pattern
+				JSONArray repoURLs = response.names();
+				
+				
+				for(int i=0; i<repoURLs.size(); i++)
+					model.add(repoURLs.getString(i));
+				
+			}
 			
 			return model;
 		}
 		
 		//Jelly (GUI) method
-		public boolean isApiUriSelectable() {
+		public boolean isGitblitUriSelectable() {
 			return !GitBlitConfiguration.get().getEndpoints().isEmpty();
 		}
 		

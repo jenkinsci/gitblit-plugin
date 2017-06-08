@@ -9,5 +9,18 @@
     <f:entry title="${%Repository name pattern}" field="pattern">
         <f:textbox default=".*"/>
     </f:entry>
+    <f:advanced>
+    <j:if test="${!descriptor.apiUriSelectable}">
+      <f:entry title="API endpoint" field="apiUri">
+        <f:select/>
+      </f:entry>
+    </j:if>
+    <f:entry title="Include branches" field="includes">
+      <f:textbox default="${descriptor.defaultIncludes}"/>
+    </f:entry>
+    <f:entry title="Exclude branches" field="excludes">
+      <f:textbox default="${descriptor.defaultExcludes}"/>
+    </f:entry>
+  </f:advanced>
   
 </j:jelly>

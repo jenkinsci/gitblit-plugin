@@ -38,21 +38,21 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 	}
 	
 	public String getIncludes() {
-		return includes != null ? includes : ".*";
+		return includes != null ? includes : DescriptorImpl.defaultIncludes;
 	}
 	
 	@DataBoundSetter
 	public void setIncludes(String includes) {
-		this.includes = includes.equals(".*") ? null : includes;
+		this.includes = includes.equals(DescriptorImpl.defaultIncludes) ? null : includes;
 	}
 	
 	public String getExcludes() {
-		return excludes != null ? excludes : ".*";
+		return excludes != null ? excludes : DescriptorImpl.defaultExcludes;
 	}
 	
 	@DataBoundSetter
 	public void setExcludes(String excludes) {
-		this.excludes = excludes.equals(".*") ? null : excludes;
+		this.excludes = excludes.equals(DescriptorImpl.defaultExcludes) ? null : excludes;
 	}
 	
 	public String getApiUri() {
@@ -68,6 +68,10 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 //		Pattern.compile(pattern);
 		this.pattern = pattern;
 	}
+	
+	public boolean isApiUriSelectable() {
+        return !GitBlitConfiguration.get().getEndpoints().isEmpty();
+    }
 	
 	@Override
 	protected String id() {
@@ -93,28 +97,37 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		
 		
 		//Connect to GitBlit and scan the repos for Jenkinsfile's
-		String listRepositoriesSuffix = apiUri.endsWith("/") ? "rpc/?req=LIST_REPOSITORIES" : "/rpc/?req=LIST_REPOSITORIES";//Ensure that it ends with "/"
-		logger.println("Connecting to GitBlit api: " + apiUri + listRepositoriesSuffix + ":");
-		JSONObject response = Connector.connect(apiUri + listRepositoriesSuffix);
+//		String listRepositoriesSuffix = apiUri.endsWith("/") ? "rpc/?req=LIST_REPOSITORIES" : "/rpc/?req=LIST_REPOSITORIES";//Ensure that it ends with "/"
+//		logger.println("Connecting to GitBlit api: " + apiUri + listRepositoriesSuffix + ":");
+		JSONObject response = Connector.listRepositories(apiUri);
 		logger.println("Response: "+response.toString(4));
 		
 		JSONArray repoURLs = response.names();
 		
 		for (int i=0;i<repoURLs.size();i++) {
 			checkInterrupt();
-			String repoURL = repoURLs.getString(i);
 			
-			String repoName = repoURL.replaceAll(".*\\/(\\S*).git","$1");
+			String repoURL = repoURLs.getString(i);//Get repository URL
+			JSONObject repository = (JSONObject) response.get(repoURL);
+			
+			String repoName = repository.getString("name");
+//			repoName = repoName.substring(0, repoName.length() - 3);//remove the .git suffix
+			
+//			String repoName = repoURL.replaceAll(".*\\/(\\S*).git","$1");//Get repository name
 			
 			//Filter the projects and add them only if they match the pattern
-			if(!Pattern.compile(pattern).matcher(repoName).matches()) {
-				logger.println("Ignoring repo: " + repoURL + " with name " + repoName);
-			} else {
+			if(Pattern.compile(pattern).matcher(repoName).matches()) {
 				logger.println("Adding repo: " + repoURL + " with name " + repoName);
 				ProjectObserver projectObserver = observer.observe(repoName);
 				
-				projectObserver.addSource(new GitBlitSCMSource(getId()+repoName,repoURL,repoName));
+				GitBlitSCMSource gitblitSource = new GitBlitSCMSource(getId()+repoName,apiUri,repoURL);
+				gitblitSource.setIncludes(getIncludes());
+				gitblitSource.setExcludes(getExcludes());
+				
+				projectObserver.addSource(gitblitSource);
 				projectObserver.complete();
+			} else {
+				logger.println("Ignoring repo: " + repoURL + " with name " + repoName);
 			}
 			
 		}
@@ -139,6 +152,9 @@ public class GitBlitSCMNavigator extends SCMNavigator {
     @Extension
     public static class DescriptorImpl extends SCMNavigatorDescriptor {
 
+		private static final String defaultIncludes = GitBlitSCMSource.DescriptorImpl.defaultIncludes;
+		private static final String defaultExcludes = GitBlitSCMSource.DescriptorImpl.defaultExcludes;
+		
         /**
          * {@inheritDoc}
          */
@@ -154,13 +170,12 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 
         @Override
         public String getDescription() {
-//        	super.createCategories();
             return "Scans a GitBlit organization for all repositories with a Jenkinsfile.";
         }
         
         @Override
         public SCMNavigator newInstance(String name) {
-        	return new GitBlitSCMNavigator(name);//TODO: implement for GitBlit?
+        	return new GitBlitSCMNavigator(name);
         }
 
         public ListBoxModel doFillApiUriItems() {

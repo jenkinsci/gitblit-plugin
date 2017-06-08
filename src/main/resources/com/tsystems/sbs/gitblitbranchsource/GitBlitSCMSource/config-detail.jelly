@@ -5,8 +5,8 @@
   <!-- AFAIK, this jelly is instantiated when trying to create a lone multibranch pipeline project with a GitHub branch source 
   instead of a GitBlit organization. A GitBlit organization would contain multiple multibranch pipeline projects with GitBlit branch sources. -->
   
-  <j:if test="${descriptor.apiUriSelectable}">
-    <f:entry title="API endpoint" field="apiUri">
+  <j:if test="${descriptor.gitblitUriSelectable}">
+    <f:entry title="API endpoint" field="gitblitUri">
       <f:select/>
     </f:entry>
   </j:if>
@@ -16,7 +16,7 @@
     <f2:select/>
   </f:entry>
   <f:advanced>
-    <j:if test="${!descriptor.apiUriSelectable}">
+    <j:if test="${!descriptor.gitblitUriSelectable}">
       <f:entry title="API endpoint" field="apiUri">
         <f:select/>
       </f:entry>
