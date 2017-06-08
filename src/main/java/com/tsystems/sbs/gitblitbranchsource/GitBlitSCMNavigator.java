@@ -93,12 +93,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		TaskListener listener = observer.getListener();
 		PrintStream logger = listener.getLogger();
 		
-		// TODO: Input data validation
-		
-		
 		//Connect to GitBlit and scan the repos for Jenkinsfile's
-//		String listRepositoriesSuffix = apiUri.endsWith("/") ? "rpc/?req=LIST_REPOSITORIES" : "/rpc/?req=LIST_REPOSITORIES";//Ensure that it ends with "/"
-//		logger.println("Connecting to GitBlit api: " + apiUri + listRepositoriesSuffix + ":");
 		JSONObject response = Connector.listRepositories(apiUri);
 		logger.println("Response: "+response.toString(4));
 		
@@ -111,12 +106,12 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 			JSONObject repository = (JSONObject) response.get(repoURL);
 			
 			String repoName = repository.getString("name");
-//			repoName = repoName.substring(0, repoName.length() - 3);//remove the .git suffix
-			
-//			String repoName = repoURL.replaceAll(".*\\/(\\S*).git","$1");//Get repository name
+			repoName = repoName.substring(0, repoName.length() - 3);//remove the .git suffix
 			
 			//Filter the projects and add them only if they match the pattern
 			if(Pattern.compile(pattern).matcher(repoName).matches()) {
+				repoName = repoName.replace('/','-');
+				
 				logger.println("Adding repo: " + repoURL + " with name " + repoName);
 				ProjectObserver projectObserver = observer.observe(repoName);
 				
