@@ -6,6 +6,9 @@
             <f:select/>
         </f:entry>
     </j:if>
+    <f:entry title="Scan credentials" field="scanCredentialsId">
+        <c:select/>
+    </f:entry>
     <f:entry title="${%Repository name pattern}" field="pattern">
         <f:textbox default=".*"/>
     </f:entry>
@@ -15,6 +18,9 @@
         <f:select/>
       </f:entry>
     </j:if>
+    <f:entry title="Checkout credentials" field="checkoutCredentialsId">
+        <c:select default="${descriptor.SAME}"/>
+    </f:entry>
     <f:entry title="Include branches" field="includes">
       <f:textbox default="${descriptor.defaultIncludes}"/>
     </f:entry>

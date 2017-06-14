@@ -10,6 +10,9 @@
       <f:select/>
     </f:entry>
   </j:if>
+  <f:entry title="Scan credentials" field="scanCredentialsId">
+    <c:select/>
+  </f:entry>
   <!-- ATTENTION: The following tag comes from GitHub branch source plugin -->
   <f:entry title="Repository" field="repository">
     <!-- TODO switch back to f:select once Jenkins core has JENKINS-42443 -->
@@ -21,6 +24,9 @@
         <f:select/>
       </f:entry>
     </j:if>
+    <f:entry title="Checkout credentials" field="checkoutCredentialsId">
+      <c:select default="${descriptor.SAME}"/>
+    </f:entry>
     <f:entry title="Include branches" field="includes">
       <f:textbox default="${descriptor.defaultIncludes}"/>
     </f:entry>

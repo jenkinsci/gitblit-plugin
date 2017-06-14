@@ -7,13 +7,22 @@ import java.util.List;
 
 import org.eclipse.jgit.transport.RefSpec;
 import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+
 import hudson.Extension;
+import hudson.model.Item;
+import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import jenkins.plugins.git.AbstractGitSCMSource;
+import jenkins.scm.api.SCMHeadEvent;
+import jenkins.scm.api.SCMHeadObserver;
+import jenkins.scm.api.SCMSourceCriteria;
 import jenkins.scm.api.SCMSourceDescriptor;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -24,21 +33,50 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 	 * This dictates where the specific URL from which the source will be retrieved.
 	 */
 	private final String gitblitUri;
-	private final String repository;
+	private final String remote;
+	
+	/** Credentials for actual clone; may be SSH private key. */
+	private final String checkoutCredentialsId;
+	/** Credentials for GitBlit API; currently only supports username/password (personal access token). */
+	private final String scanCredentialsId;
 	
 	private String includes = DescriptorImpl.defaultIncludes;
 	private String excludes = DescriptorImpl.defaultExcludes;
 	
 	@DataBoundConstructor
-	public GitBlitSCMSource(String id, String gitblitUri, String repository) {
+	public GitBlitSCMSource(String id, String gitblitUri, String checkoutCredentialsId, String scanCredentialsId, String remote) {
 		super(id);
 		this.gitblitUri = gitblitUri;
-		this.repository = repository;
+		this.checkoutCredentialsId = checkoutCredentialsId;
+		this.scanCredentialsId = scanCredentialsId;
+		this.remote = remote;
 	}
 
 	@Override
 	public String getCredentialsId() {
-		return null;
+		if (DescriptorImpl.ANONYMOUS.equals(checkoutCredentialsId)) {
+			return null;
+		} else if (DescriptorImpl.SAME.equals(checkoutCredentialsId)) {
+			return scanCredentialsId;
+		} else {
+			return checkoutCredentialsId;
+		}
+	}
+	
+	public String getScanCredentialsId() {
+		return scanCredentialsId;
+	}
+	
+	public String getCheckoutCredentialsId() {
+		return checkoutCredentialsId;
+	}
+	
+	@Override
+	protected void retrieve(SCMSourceCriteria criteria, SCMHeadObserver observer, SCMHeadEvent<?> event,
+			TaskListener listener) throws IOException, InterruptedException {
+		
+		listener.getLogger().println("ENTERING GitblitSCMSource================");
+		super.retrieve(criteria, observer, event, listener);
 	}
 
 	/**
@@ -46,17 +84,13 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 	 */
 	@Override
 	public String getRemote() {
-		return repository;
+		return remote;
 	}
 	
 	public String getGitblitUri() {
 		return gitblitUri;
 	}
 	
-	public String getRepository() {
-		return repository;
-	}
-
 	@Override
 	public String getIncludes() {
 		return includes;
@@ -97,6 +131,8 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 
 		public static final String defaultIncludes = "*";
         public static final String defaultExcludes = "";
+        public static final String ANONYMOUS = "ANONYMOUS";
+        public static final String SAME = "SAME";
         
 		@Override
 		public String getDisplayName() {
@@ -113,11 +149,30 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 		}
 		
 		//Jelly (GUI) method
-		public ListBoxModel doFillRepositoryItems(@QueryParameter String gitblitUri) throws IOException {
+		public ListBoxModel doFillRepositoryItems(@AncestorInPath Item context, @QueryParameter String gitblitUri, 
+				@QueryParameter String scanCredentialsId) throws IOException {
+			
 			ListBoxModel model = new ListBoxModel();
 			
 			if (gitblitUri != null && !gitblitUri.isEmpty()) {
-				JSONObject response = Connector.listRepositories(gitblitUri);//Maybe we should list the repositories which match the organization pattern
+				
+				//Get credentials to connect to Gitblit
+				StandardCredentials credentials = Connector.lookupScanCredentials(context, gitblitUri, scanCredentialsId);
+				
+				String username = null;
+				String password = null;
+				if (credentials != null) {
+					StandardUsernamePasswordCredentials c = (StandardUsernamePasswordCredentials) credentials;
+		            username = c.getUsername();
+		            password = c.getPassword().getPlainText();
+				}
+	            
+//	            Random ENTROPY = new Random();
+//	            String SALT = Long.toHexString(ENTROPY.nextLong());
+	            
+//	            String hash = Util.getDigestOf(password + SALT); // want to ensure pooling by credentials
+	            
+				JSONObject response = Connector.connect(gitblitUri,Connector.LIST_REPOSITORIES,username,password);//TODO: Maybe we should list the repositories which match the organization pattern
 				JSONArray repoURLs = response.names();
 				
 				
@@ -128,6 +183,14 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 			
 			return model;
 		}
+		
+		public ListBoxModel doFillCheckoutCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String apiUri) {
+            return Connector.listCheckoutCredentials(context, apiUri);
+        }
+
+        public ListBoxModel doFillScanCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String apiUri) {
+            return Connector.listScanCredentials(context, apiUri);
+        }
 		
 		//Jelly (GUI) method
 		public boolean isGitblitUriSelectable() {

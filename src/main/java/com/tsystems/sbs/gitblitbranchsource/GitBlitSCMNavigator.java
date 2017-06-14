@@ -7,12 +7,17 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Action;
+import hudson.model.Item;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import jenkins.scm.api.SCMNavigator;
@@ -27,14 +32,18 @@ import net.sf.json.JSONObject;
 public class GitBlitSCMNavigator extends SCMNavigator {
 
 	private final String apiUri;
+	private final String scanCredentialsId;
+	private final String checkoutCredentialsId;
 	private String pattern = ".*";
 	
 	private String includes;
 	private String excludes;
 	
 	@DataBoundConstructor
-	public GitBlitSCMNavigator (String apiUri){
+	public GitBlitSCMNavigator (String apiUri, String scanCredentialsId, String checkoutCredentialsId){
 		this.apiUri = Util.fixEmptyAndTrim(apiUri);
+		this.scanCredentialsId = scanCredentialsId;
+		this.checkoutCredentialsId = checkoutCredentialsId;
 	}
 	
 	public String getIncludes() {
@@ -61,6 +70,14 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 	
 	public String getPattern() {
 		return pattern;
+	}
+	
+	public String getScanCredentialsId() {
+		return scanCredentialsId;
+	}
+	
+	public String getCheckoutCredentialsId() {
+		return checkoutCredentialsId;
 	}
 	
 	@DataBoundSetter
@@ -93,8 +110,16 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		TaskListener listener = observer.getListener();
 		PrintStream logger = listener.getLogger();
 		
+		StandardUsernamePasswordCredentials credentials = (StandardUsernamePasswordCredentials) Connector.lookupScanCredentials((Item)observer.getContext(), apiUri, scanCredentialsId);
+		String user = null;
+		String password = null;
+		if (credentials != null) {
+			user = credentials.getUsername();
+			password = credentials.getPassword().getPlainText();
+		}
+		
 		//Connect to GitBlit and scan the repos for Jenkinsfile's
-		JSONObject response = Connector.listRepositories(apiUri);
+		JSONObject response = Connector.connect(apiUri,Connector.LIST_REPOSITORIES,user,password);
 		logger.println("Response: "+response.toString(4));
 		
 		JSONArray repoURLs = response.names();
@@ -115,7 +140,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 				logger.println("Adding repo: " + repoURL + " with name " + repoName);
 				ProjectObserver projectObserver = observer.observe(repoName);
 				
-				GitBlitSCMSource gitblitSource = new GitBlitSCMSource(getId()+repoName,apiUri,repoURL);
+				GitBlitSCMSource gitblitSource = new GitBlitSCMSource(getId()+repoName, apiUri, checkoutCredentialsId, scanCredentialsId, repoURL);
 				gitblitSource.setIncludes(getIncludes());
 				gitblitSource.setExcludes(getExcludes());
 				
@@ -147,8 +172,9 @@ public class GitBlitSCMNavigator extends SCMNavigator {
     @Extension
     public static class DescriptorImpl extends SCMNavigatorDescriptor {
 
-		private static final String defaultIncludes = GitBlitSCMSource.DescriptorImpl.defaultIncludes;
-		private static final String defaultExcludes = GitBlitSCMSource.DescriptorImpl.defaultExcludes;
+		public static final String defaultIncludes = GitBlitSCMSource.DescriptorImpl.defaultIncludes;
+		public static final String defaultExcludes = GitBlitSCMSource.DescriptorImpl.defaultExcludes;
+		public static final String SAME = GitBlitSCMSource.DescriptorImpl.SAME;
 		
         /**
          * {@inheritDoc}
@@ -170,9 +196,17 @@ public class GitBlitSCMNavigator extends SCMNavigator {
         
         @Override
         public SCMNavigator newInstance(String name) {
-        	return new GitBlitSCMNavigator(name);
+        	return new GitBlitSCMNavigator(name, "", GitBlitSCMSource.DescriptorImpl.SAME);
         }
 
+        public ListBoxModel doFillScanCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String apiUri) {
+        	return Connector.listScanCredentials(context, apiUri);
+        }
+        
+        public ListBoxModel doFillCheckoutCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String apiUri) {
+        	return Connector.listCheckoutCredentials(context, apiUri);
+        }
+        
         public ListBoxModel doFillApiUriItems() {
             ListBoxModel result = new ListBoxModel();
             for (Endpoint e : GitBlitConfiguration.get().getEndpoints()) {
