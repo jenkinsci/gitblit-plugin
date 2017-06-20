@@ -17,12 +17,8 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 
 import hudson.Extension;
 import hudson.model.Item;
-import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import jenkins.plugins.git.AbstractGitSCMSource;
-import jenkins.scm.api.SCMHeadEvent;
-import jenkins.scm.api.SCMHeadObserver;
-import jenkins.scm.api.SCMSourceCriteria;
 import jenkins.scm.api.SCMSourceDescriptor;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -71,14 +67,6 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 		return checkoutCredentialsId;
 	}
 	
-	@Override
-	protected void retrieve(SCMSourceCriteria criteria, SCMHeadObserver observer, SCMHeadEvent<?> event,
-			TaskListener listener) throws IOException, InterruptedException {
-		
-		listener.getLogger().println("ENTERING GitblitSCMSource================");
-		super.retrieve(criteria, observer, event, listener);
-	}
-
 	/**
 	 * This dictates where the specific URL from which the source will be retrieved.
 	 */
@@ -167,17 +155,19 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 		            password = c.getPassword().getPlainText();
 				}
 	            
-//	            Random ENTROPY = new Random();
-//	            String SALT = Long.toHexString(ENTROPY.nextLong());
-	            
-//	            String hash = Util.getDigestOf(password + SALT); // want to ensure pooling by credentials
-	            
-				JSONObject response = Connector.connect(gitblitUri,Connector.LIST_REPOSITORIES,username,password);//TODO: Maybe we should list the repositories which match the organization pattern
-				JSONArray repoURLs = response.names();
+				JSONObject response = null;
+				JSONArray repoURLs = null;
+				try {
+					response = Connector.connect(gitblitUri,Connector.LIST_REPOSITORIES,username,password);//TODO: Maybe we should list the repositories which match the organization pattern
+					repoURLs = response.names();
+					
+					for(int i=0; i<repoURLs.size(); i++) 
+						model.add(repoURLs.getString(i));
+					
+				} catch (IOException e) {
+					model.add("-- Couldn't retrieve the repositories from Gitblit --");
+				}
 				
-				
-				for(int i=0; i<repoURLs.size(); i++)
-					model.add(repoURLs.getString(i));
 				
 			}
 			

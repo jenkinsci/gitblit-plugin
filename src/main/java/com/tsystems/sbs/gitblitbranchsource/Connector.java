@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.Authenticator;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.PasswordAuthentication;
 import java.net.Proxy;
 import java.net.URL;
@@ -40,26 +42,19 @@ public class Connector {
 	public static final String LIST_BRANCHES = "rpc/?req=LIST_BRANCHES";
 	public static final String LIST_REPOSITORIES = "rpc/?req=LIST_REPOSITORIES";
 	
-	public static JSONObject connect(String host, String rpcFunction,final String username, final String password) throws IOException {
-		URL functionUrl = new URL(host + "/" + rpcFunction);
+	public static JSONObject connect(String gitblitUri, String rpcFunction,final String username, final String password) throws IOException {
+		URL functionUrl = new URL(gitblitUri + (gitblitUri.endsWith("/") ? "" : "/") + rpcFunction);//Append a '/' if the host URL doesn't end with '/'
 		
-		HttpURLConnection connection = null;
-		//TODO: Filter in a more sophisticated manner
-		if(host.contains("localhost"))
-			connection = (HttpURLConnection) functionUrl.openConnection();
-		else {
-			connection = (HttpURLConnection) functionUrl.openConnection(getProxy(host));
+		HttpURLConnection connection = (HttpURLConnection) functionUrl.openConnection(getProxy(functionUrl.getHost()));
 		
-			if (username != null && password != null) {
-				Authenticator.setDefault(new Authenticator() {
-					protected PasswordAuthentication getPasswordAuthentication() {
-						return new PasswordAuthentication(username,password.toCharArray());
-					}
-				});
-			}
-			
+		if (username != null && password != null) {
+			Authenticator.setDefault(new Authenticator() {
+				protected PasswordAuthentication getPasswordAuthentication() {
+					return new PasswordAuthentication(username,password.toCharArray());
+				}
+			});
 		}
-		
+			
 		InputStream stream = connection.getInputStream();
 		InputStreamReader isReader = new InputStreamReader(stream, "UTF-8");
 		
@@ -129,12 +124,12 @@ public class Connector {
                            : ACL.SYSTEM,
                    gitblitDomainRequirements(apiUri)
                ),
-               CredentialsMatchers.allOf(CredentialsMatchers.withId(scanCredentialsId), githubScanCredentialsMatcher())
+               CredentialsMatchers.allOf(CredentialsMatchers.withId(scanCredentialsId), gitblitScanCredentialsMatcher())
            );
        }
    }
    
-   private static CredentialsMatcher githubScanCredentialsMatcher() {
+   private static CredentialsMatcher gitblitScanCredentialsMatcher() {
        // TODO OAuth credentials
        return CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class));
    }
@@ -157,7 +152,7 @@ public class Connector {
                        context,
                        StandardUsernameCredentials.class,
                        gitblitDomainRequirements(apiUri),
-                       githubScanCredentialsMatcher()
+                       gitblitScanCredentialsMatcher()
                );
    }
    

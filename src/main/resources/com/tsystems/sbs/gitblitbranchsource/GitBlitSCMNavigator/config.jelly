@@ -1,8 +1,8 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
 
-	<j:if test="${descriptor.apiUriSelectable}">
-        <f:entry title="API endpoint" field="apiUri">
+	<j:if test="${descriptor.gitblitUriSelectable}">
+        <f:entry title="API endpoint" field="gitblitUri">
             <f:select/>
         </f:entry>
     </j:if>
@@ -13,8 +13,8 @@
         <f:textbox default=".*"/>
     </f:entry>
     <f:advanced>
-    <j:if test="${!descriptor.apiUriSelectable}">
-      <f:entry title="API endpoint" field="apiUri">
+    <j:if test="${!descriptor.gitblitUriSelectable}">
+      <f:entry title="API endpoint" field="gitblitUri">
         <f:select/>
       </f:entry>
     </j:if>

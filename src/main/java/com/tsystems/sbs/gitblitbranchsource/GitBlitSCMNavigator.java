@@ -2,8 +2,6 @@ package com.tsystems.sbs.gitblitbranchsource;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.Pattern;
 
 import org.jenkinsci.Symbol;
@@ -16,14 +14,11 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 
 import hudson.Extension;
 import hudson.Util;
-import hudson.model.Action;
 import hudson.model.Item;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import jenkins.scm.api.SCMNavigator;
 import jenkins.scm.api.SCMNavigatorDescriptor;
-import jenkins.scm.api.SCMNavigatorEvent;
-import jenkins.scm.api.SCMNavigatorOwner;
 import jenkins.scm.api.SCMSourceObserver;
 import jenkins.scm.api.SCMSourceObserver.ProjectObserver;
 import net.sf.json.JSONArray;
@@ -31,7 +26,7 @@ import net.sf.json.JSONObject;
 
 public class GitBlitSCMNavigator extends SCMNavigator {
 
-	private final String apiUri;
+	private final String gitblitUri;
 	private final String scanCredentialsId;
 	private final String checkoutCredentialsId;
 	private String pattern = ".*";
@@ -40,8 +35,8 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 	private String excludes;
 	
 	@DataBoundConstructor
-	public GitBlitSCMNavigator (String apiUri, String scanCredentialsId, String checkoutCredentialsId){
-		this.apiUri = Util.fixEmptyAndTrim(apiUri);
+	public GitBlitSCMNavigator (String gitblitUri, String scanCredentialsId, String checkoutCredentialsId){
+		this.gitblitUri = Util.fixEmptyAndTrim(gitblitUri);
 		this.scanCredentialsId = scanCredentialsId;
 		this.checkoutCredentialsId = checkoutCredentialsId;
 	}
@@ -64,8 +59,8 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		this.excludes = excludes.equals(DescriptorImpl.defaultExcludes) ? null : excludes;
 	}
 	
-	public String getApiUri() {
-		return apiUri;
+	public String getGitblitUri() {
+		return gitblitUri;
 	}
 	
 	public String getPattern() {
@@ -86,7 +81,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		this.pattern = pattern;
 	}
 	
-	public boolean isApiUriSelectable() {
+	public boolean isGitblitUriSelectable() {
         return !GitBlitConfiguration.get().getEndpoints().isEmpty();
     }
 	
@@ -100,7 +95,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
         // in a team)
         //
         // See the Javadoc for more details.
-		return apiUri;//TODO: set a more complex ID
+		return gitblitUri;//TODO: set a more complex ID
 	}
 
 	
@@ -110,7 +105,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		TaskListener listener = observer.getListener();
 		PrintStream logger = listener.getLogger();
 		
-		StandardUsernamePasswordCredentials credentials = (StandardUsernamePasswordCredentials) Connector.lookupScanCredentials((Item)observer.getContext(), apiUri, scanCredentialsId);
+		StandardUsernamePasswordCredentials credentials = (StandardUsernamePasswordCredentials) Connector.lookupScanCredentials((Item)observer.getContext(), gitblitUri, scanCredentialsId);
 		String user = null;
 		String password = null;
 		if (credentials != null) {
@@ -119,53 +114,44 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		}
 		
 		//Connect to GitBlit and scan the repos for Jenkinsfile's
-		JSONObject response = Connector.connect(apiUri,Connector.LIST_REPOSITORIES,user,password);
-		logger.println("Response: "+response.toString(4));
+		JSONObject response = Connector.connect(gitblitUri, Connector.LIST_REPOSITORIES, user, password);
+		logger.println("Response JSON: "+response.toString(4));
 		
 		JSONArray repoURLs = response.names();
 		
-		for (int i=0;i<repoURLs.size();i++) {
-			checkInterrupt();
-			
-			String repoURL = repoURLs.getString(i);//Get repository URL
-			JSONObject repository = (JSONObject) response.get(repoURL);
-			
-			String repoName = repository.getString("name");
-			repoName = repoName.substring(0, repoName.length() - 3);//remove the .git suffix
-			
-			//Filter the projects and add them only if they match the pattern
-			if(Pattern.compile(pattern).matcher(repoName).matches()) {
-				repoName = repoName.replace('/','-');
+		if (repoURLs.isEmpty()) {
+			logger.print("No repositories have been found at the specified Gitblit address.");
+		} else {
+			for (int i=0;i<repoURLs.size();i++) {
+				checkInterrupt();
 				
-				logger.println("Adding repo: " + repoURL + " with name " + repoName);
-				ProjectObserver projectObserver = observer.observe(repoName);
+				String repoURL = repoURLs.getString(i);//Get repository URL
+				JSONObject repository = (JSONObject) response.get(repoURL);
 				
-				GitBlitSCMSource gitblitSource = new GitBlitSCMSource(getId()+repoName, apiUri, checkoutCredentialsId, scanCredentialsId, repoURL);
-				gitblitSource.setIncludes(getIncludes());
-				gitblitSource.setExcludes(getExcludes());
+				String repoName = repository.getString("name");
+				repoName = repoName.substring(0, repoName.length() - 4);//remove the .git suffix
 				
-				projectObserver.addSource(gitblitSource);
-				projectObserver.complete();
-			} else {
-				logger.println("Ignoring repo: " + repoURL + " with name " + repoName);
+				//Filter the projects and add them only if they match the pattern
+				if(Pattern.compile(pattern).matcher(repoName).matches()) {
+					repoName = repoName.replace('/','-');
+					
+					logger.println("Adding repository: " + repoURL + " with name " + repoName);
+					ProjectObserver projectObserver = observer.observe(repoName);
+					
+					GitBlitSCMSource gitblitSource = new GitBlitSCMSource(getId() + repoName, gitblitUri, checkoutCredentialsId, scanCredentialsId, repoURL);
+					gitblitSource.setIncludes(getIncludes());
+					gitblitSource.setExcludes(getExcludes());
+					
+					projectObserver.addSource(gitblitSource);
+					projectObserver.complete();
+				} else {
+					logger.println("Ignoring repo: " + repoURL + " with name " + repoName);
+				}
+				
 			}
-			
 		}
 		
 		return;
-	}
-	
-	@Override
-	public List<Action> retrieveActions(SCMNavigatorOwner owner, SCMNavigatorEvent event, TaskListener listener) throws IOException, InterruptedException {
-		List<Action> result = new ArrayList<>();
-		// If your SCM provides support for metadata at the "SCMNavigator" level
-		// then you probably want to return at least a "jenkins.branch.MetadataAction"
-		// from this method. The listener can be used to log the interactions
-		// with the backing source control system.
-		//
-		// When you implement event support, if you have events when populating the
-		// action (if that will avoid extra network calls and give the same result)
-		return result;
 	}
 	
 	@Symbol("gitblit")
@@ -199,15 +185,15 @@ public class GitBlitSCMNavigator extends SCMNavigator {
         	return new GitBlitSCMNavigator(name, "", GitBlitSCMSource.DescriptorImpl.SAME);
         }
 
-        public ListBoxModel doFillScanCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String apiUri) {
-        	return Connector.listScanCredentials(context, apiUri);
+        public ListBoxModel doFillScanCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String gitblitUri) {
+        	return Connector.listScanCredentials(context, gitblitUri);
         }
         
-        public ListBoxModel doFillCheckoutCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String apiUri) {
-        	return Connector.listCheckoutCredentials(context, apiUri);
+        public ListBoxModel doFillCheckoutCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String gitblitUri) {
+        	return Connector.listCheckoutCredentials(context, gitblitUri);
         }
         
-        public ListBoxModel doFillApiUriItems() {
+        public ListBoxModel doFillGitblitUriItems() {
             ListBoxModel result = new ListBoxModel();
             for (Endpoint e : GitBlitConfiguration.get().getEndpoints()) {
                 result.add(e.getName() == null ? e.getApiUri() : e.getName(), e.getApiUri());
@@ -215,7 +201,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
             return result;
         }
 
-        public boolean isApiUriSelectable() {
+        public boolean isGitblitUriSelectable() {
             return !GitBlitConfiguration.get().getEndpoints().isEmpty();
         }
 
