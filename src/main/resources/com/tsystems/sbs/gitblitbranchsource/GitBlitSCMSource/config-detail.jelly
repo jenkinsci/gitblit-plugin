@@ -13,11 +13,6 @@
   <f:entry title="Scan credentials" field="scanCredentialsId">
     <c:select/>
   </f:entry>
-  <!-- ATTENTION: The following tag comes from GitHub branch source plugin -->
-  <f:entry title="Repository" field="repository">
-    <!-- TODO switch back to f:select once Jenkins core has JENKINS-42443 -->
-    <f2:select/>
-  </f:entry>
   <f:advanced>
     <j:if test="${!descriptor.gitblitUriSelectable}">
       <f:entry title="API endpoint" field="apiUri">

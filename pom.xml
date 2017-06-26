@@ -61,6 +61,12 @@
       <id>repo.jenkins-ci.org</id>
       <url>https://repo.jenkins-ci.org/public/</url>
     </repository>
+    <repository>
+	  <id>com.gitblit</id>
+	  <name>Gitblit</name>
+	  <url>http://gitblit.github.io/gitblit-maven/</url>
+	  <layout>default</layout>
+	</repository>
   </repositories>
   <pluginRepositories>
     <pluginRepository>
@@ -136,6 +142,11 @@
                     <artifactId>hamcrest-core</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+        	<groupId>com.gitblit</groupId>
+        	<artifactId>gbapi</artifactId>
+        	<version>1.8.0</version>
         </dependency>
 	</dependencies>
 

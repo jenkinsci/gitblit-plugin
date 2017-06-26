@@ -1,6 +1,5 @@
 package com.tsystems.sbs.gitblitbranchsource;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -12,16 +11,11 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-
 import hudson.Extension;
 import hudson.model.Item;
 import hudson.util.ListBoxModel;
 import jenkins.plugins.git.AbstractGitSCMSource;
 import jenkins.scm.api.SCMSourceDescriptor;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 
 public class GitBlitSCMSource extends AbstractGitSCMSource {
 
@@ -134,44 +128,6 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 				result.add(e.getName() == null ? e.getApiUri() : e.getName(), e.getApiUri());
 			}
 			return result;
-		}
-		
-		//Jelly (GUI) method
-		public ListBoxModel doFillRepositoryItems(@AncestorInPath Item context, @QueryParameter String gitblitUri, 
-				@QueryParameter String scanCredentialsId) throws IOException {
-			
-			ListBoxModel model = new ListBoxModel();
-			
-			if (gitblitUri != null && !gitblitUri.isEmpty()) {
-				
-				//Get credentials to connect to Gitblit
-				StandardCredentials credentials = Connector.lookupScanCredentials(context, gitblitUri, scanCredentialsId);
-				
-				String username = null;
-				String password = null;
-				if (credentials != null) {
-					StandardUsernamePasswordCredentials c = (StandardUsernamePasswordCredentials) credentials;
-		            username = c.getUsername();
-		            password = c.getPassword().getPlainText();
-				}
-	            
-				JSONObject response = null;
-				JSONArray repoURLs = null;
-				try {
-					response = Connector.connect(gitblitUri,Connector.LIST_REPOSITORIES,username,password);//TODO: Maybe we should list the repositories which match the organization pattern
-					repoURLs = response.names();
-					
-					for(int i=0; i<repoURLs.size(); i++) 
-						model.add(repoURLs.getString(i));
-					
-				} catch (IOException e) {
-					model.add("-- Couldn't retrieve the repositories from Gitblit --");
-				}
-				
-				
-			}
-			
-			return model;
 		}
 		
 		public ListBoxModel doFillCheckoutCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String apiUri) {
