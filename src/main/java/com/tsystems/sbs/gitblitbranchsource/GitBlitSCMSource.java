@@ -16,6 +16,7 @@ import hudson.model.Item;
 import hudson.util.ListBoxModel;
 import jenkins.plugins.git.AbstractGitSCMSource;
 import jenkins.scm.api.SCMSourceDescriptor;
+import jenkins.scm.api.trait.SCMSourceTrait;
 
 public class GitBlitSCMSource extends AbstractGitSCMSource {
 
@@ -91,6 +92,15 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 	@DataBoundSetter
 	public void setExcludes(String excludes) {
 		this.excludes = excludes;
+	}
+	
+	//Patch to discover branches with Git plugin > 3.32
+	@Override
+	public List<SCMSourceTrait> getTraits() {
+		List<SCMSourceTrait> traits = new ArrayList<>();
+		SCMSourceTrait branchTrait = new DiscoverBranchesTrait();
+		traits.add(branchTrait);
+		return traits;
 	}
 	
 	@Override
