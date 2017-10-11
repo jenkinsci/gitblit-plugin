@@ -94,11 +94,11 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 		this.excludes = excludes;
 	}
 	
-	//Patch to discover branches with Git plugin > 3.32
+	//Workaround to discover branches with Git plugin > 3.32
 	@Override
 	public List<SCMSourceTrait> getTraits() {
 		List<SCMSourceTrait> traits = new ArrayList<>();
-		SCMSourceTrait branchTrait = new DiscoverBranchesTrait();
+		SCMSourceTrait branchTrait = new BranchDiscoveryTrait();
 		traits.add(branchTrait);
 		return traits;
 	}

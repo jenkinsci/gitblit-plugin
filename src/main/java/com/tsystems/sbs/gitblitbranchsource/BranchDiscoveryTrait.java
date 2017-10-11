@@ -6,7 +6,7 @@ import jenkins.scm.api.trait.SCMSourceContext;
 import jenkins.scm.api.trait.SCMSourceTrait;
 import jenkins.scm.api.trait.SCMSourceTraitDescriptor;
 
-public class DiscoverBranchesTrait extends SCMSourceTrait {
+public class BranchDiscoveryTrait extends SCMSourceTrait {
 	@Override
 	protected void decorateContext(SCMSourceContext<?, ?> context) {
 		GitSCMSourceContext gitContext = (GitSCMSourceContext) context;
@@ -17,7 +17,7 @@ public class DiscoverBranchesTrait extends SCMSourceTrait {
 	public static class DescriptorImpl extends SCMSourceTraitDescriptor {
 		@Override
 		public String getDisplayName() {
-			return null;
+			return "BranchDiscoveryTrait";
 		}
 	}
 }
