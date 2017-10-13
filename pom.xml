@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
     <version>2.25</version>
-    <relativePath/>
+    <relativePath />
   </parent>
   <groupId>com.tsystems.sbs</groupId>
   <artifactId>gitblit-branch-source</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -19,8 +18,7 @@
     <scm-api.version>2.2.3</scm-api.version>
     
     <!-- Other properties you may want to use:
-         ~ java.level: set to 6 if your jenkins.version <= 1.611
-         ~ jenkins-test-harness.version: Jenkins Test Harness version you use to test the plugin. For Jenkins version >= 1.580.1 use JTH 2.0 or higher.
+         ~ java.level: set to 6 if your jenkins.version <= 1.611 ~ jenkins-test-harness.version: Jenkins Test Harness version you use to test the plugin. For Jenkins version >= 1.580.1 use JTH 2.0 or higher.
          ~ hpi-plugin.version: The HPI Maven Plugin version used by the plugin..
          ~ stapler-plugin.version: The Stapler Maven plugin version required by the plugin.
     -->
@@ -28,7 +26,7 @@
   
   <name>GitBlit Organization Plugin</name>
   <description>Pipeline-as-Code support for a whole GitBlit organization</description>
-  <url></url>
+  <url />
 
   <!-- The default licence for Jenkins OSS Plugins is MIT. Substitute for the applicable one if needed. -->
 
@@ -52,7 +50,7 @@
       <connection>scm:git:https://github.com/SoftwareBuildService/gitblit-branch-source-plugin.git</connection>
       <developerConnection>scm:git:https://github.com/SoftwareBuildService/gitblit-branch-source-plugin.git</developerConnection>
       <url>https://github.com/SoftwareBuildService/gitblit-branch-source-plugin</url>
-      <tag>HEAD</tag>
+      <tag>gitblit-branch-source-1.0</tag>
   </scm>
   <repositories>
     <repository>
@@ -133,7 +131,7 @@
 										</goals>
 									</pluginExecutionFilter>
 									<action>
-										<ignore></ignore>
+										<ignore />
 									</action>
 								</pluginExecution>
 							</pluginExecutions>
