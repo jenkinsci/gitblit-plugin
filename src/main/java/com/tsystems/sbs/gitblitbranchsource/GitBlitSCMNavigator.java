@@ -108,48 +108,50 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		TaskListener listener = observer.getListener();
 		PrintStream logger = listener.getLogger();
 
-		StandardUsernamePasswordCredentials credentials = (StandardUsernamePasswordCredentials) Connector.lookupScanCredentials((Item)observer.getContext(), gitblitUri, scanCredentialsId);
-		String user = null;
-		String password = "";
-		if (credentials != null) {
-			user = credentials.getUsername();
-			password = credentials.getPassword().getPlainText();
-			
-		}
-	
-		//TODO: configure proxy?
-			
-		logger.println("Connecting to Gitblit at " + gitblitUri);
-		//Connect to GitBlit and scan the repos for Jenkinsfile's
-		Map<String, RepositoryModel> response = RpcUtils.getRepositories(gitblitUri, user, password.toCharArray());
-
-		Iterator<Entry<String, RepositoryModel>> repoIterator = response.entrySet().iterator();
-		while(repoIterator.hasNext()) {
-			Entry<String, RepositoryModel> repoEntry = repoIterator.next();
-			
-			String repoUrl = repoEntry.getKey();
-			logger.println("Found repository: " + repoUrl);
-
-			RepositoryModel repository = repoEntry.getValue();
-			String repoName = repository.name;
-			repoName = repoName.substring(0,repoName.length() - 4);//remove the .git suffix
-
-			//Filter the projects and add them only if they match the pattern
-			if(Pattern.compile(pattern).matcher(repoName).matches()) {
-				repoName = repoName.replace('/', '-');
-
-				logger.println("Adding repository: " + repoEntry + " with name " + repoName);
-				ProjectObserver projectObserver = observer.observe(repoName);
-
-				GitBlitSCMSource gitblitSource = new GitBlitSCMSource(getId() + repoName, gitblitUri, checkoutCredentialsId, scanCredentialsId, repoUrl);
-				gitblitSource.setIncludes(getIncludes());
-				gitblitSource.setExcludes(getExcludes());
-
-				projectObserver.addSource(gitblitSource);
-				projectObserver.complete();
-			} else {
-				logger.println("Ignoring repo: " + repoEntry + " with name " + repoName);
+		if (gitblitUri != null) {
+			StandardUsernamePasswordCredentials credentials = (StandardUsernamePasswordCredentials) Connector.lookupScanCredentials((Item)observer.getContext(), gitblitUri, scanCredentialsId);
+			String user = null;
+			String password = "";
+			if (credentials != null) {
+				user = credentials.getUsername();
+				password = credentials.getPassword().getPlainText();
+				
 			}
+		
+			//TODO: configure proxy?
+				
+			logger.println("Connecting to Gitblit at " + gitblitUri);
+			//Connect to GitBlit and scan the repos for Jenkinsfile's
+			Map<String, RepositoryModel> response = RpcUtils.getRepositories(gitblitUri, user, password.toCharArray());
+		
+			Iterator<Entry<String, RepositoryModel>> repoIterator = response.entrySet().iterator();
+			while(repoIterator.hasNext()) {
+				Entry<String, RepositoryModel> repoEntry = repoIterator.next();
+				
+				String repoUrl = repoEntry.getKey();
+				logger.println("Found repository: " + repoUrl);
+		
+				RepositoryModel repository = repoEntry.getValue();
+				String repoName = repository.name;
+				repoName = repoName.substring(0,repoName.length() - 4);//remove the .git suffix
+		
+				//Filter the projects and add them only if they match the pattern
+				if(Pattern.compile(pattern).matcher(repoName).matches()) {
+					repoName = repoName.replace('/', '-');
+		
+					logger.println("Adding repository: " + repoEntry + " with name " + repoName);
+					ProjectObserver projectObserver = observer.observe(repoName);
+		
+					GitBlitSCMSource gitblitSource = new GitBlitSCMSource(getId() + repoName, gitblitUri, checkoutCredentialsId, scanCredentialsId, repoUrl, getIncludes(), getExcludes());
+		
+					projectObserver.addSource(gitblitSource);
+					projectObserver.complete();
+				} else {
+					logger.println("Ignoring repo: " + repoEntry + " with name " + repoName);
+				}
+			}
+		} else {
+			logger.println("No Gitblit instance has been specified. A Gitblit server must be chosen from the ones specified at \"Manage Jenkins -> Configure System\" ");
 		}
 
 		return;
@@ -159,8 +161,8 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 	@Extension
 	public static class DescriptorImpl extends SCMNavigatorDescriptor {
 
-		public static final String defaultIncludes = GitBlitSCMSource.DescriptorImpl.defaultIncludes;
-		public static final String defaultExcludes = GitBlitSCMSource.DescriptorImpl.defaultExcludes;
+		public static final String defaultIncludes = "*";
+        public static final String defaultExcludes = "";
 		public static final String SAME = GitBlitSCMSource.DescriptorImpl.SAME;
 
 		/**

@@ -14,11 +14,13 @@ import org.kohsuke.stapler.QueryParameter;
 import hudson.Extension;
 import hudson.model.Item;
 import hudson.util.ListBoxModel;
-import jenkins.plugins.git.AbstractGitSCMSource;
+import jenkins.plugins.git.GitSCMSource;
 import jenkins.scm.api.SCMSourceDescriptor;
 import jenkins.scm.api.trait.SCMSourceTrait;
+import jenkins.scm.api.trait.SCMTrait;
+import jenkins.scm.impl.trait.WildcardSCMHeadFilterTrait;
 
-public class GitBlitSCMSource extends AbstractGitSCMSource {
+public class GitBlitSCMSource extends GitSCMSource {
 
 	/**
 	 * This dictates where the specific URL from which the source will be retrieved.
@@ -26,23 +28,32 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 	private final String gitblitUri;
 	private final String remote;
 	
+	private List<SCMSourceTrait> traits = new ArrayList<>();
+	
 	/** Credentials for actual clone; may be SSH private key. */
 	private final String checkoutCredentialsId;
 	/** Credentials for GitBlit API; currently only supports username/password (personal access token). */
 	private final String scanCredentialsId;
 	
-	private String includes = DescriptorImpl.defaultIncludes;
-	private String excludes = DescriptorImpl.defaultExcludes;
-	
 	@DataBoundConstructor
-	public GitBlitSCMSource(String id, String gitblitUri, String checkoutCredentialsId, String scanCredentialsId, String remote) {
-		super(id);
+	public GitBlitSCMSource(String id, String gitblitUri, String checkoutCredentialsId, String scanCredentialsId, String remote, String includes, String excludes) {
+		super(remote);
 		this.gitblitUri = gitblitUri;
 		this.checkoutCredentialsId = checkoutCredentialsId;
 		this.scanCredentialsId = scanCredentialsId;
 		this.remote = remote;
+		
+		//SET TRAITS
+		//TODO: check which traits could be useful
+		List<SCMSourceTrait> traits = new ArrayList<>();
+		
+		//Branch discovery trait: this allows the navigator to see and process branches
+		traits.add(new BranchDiscoveryTrait());
+		//Branch filtering trait
+		traits.add(new WildcardSCMHeadFilterTrait(includes,excludes));
+		setTraits(traits);
 	}
-
+	
 	@Override
 	public String getCredentialsId() {
 		if (DescriptorImpl.ANONYMOUS.equals(checkoutCredentialsId)) {
@@ -75,33 +86,14 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 	}
 	
 	@Override
-	public String getIncludes() {
-		return includes;
-	}
-	
-	@DataBoundSetter
-	public void setIncludes(String includes) {
-		this.includes = includes;
-	}
-
-	@Override
-	public String getExcludes() {
-		return excludes;
-	}
-	
-	@DataBoundSetter
-	public void setExcludes(String excludes) {
-		this.excludes = excludes;
-	}
-	
-	//Workaround to discover branches with Git plugin > 3.32
-	@Override
 	public List<SCMSourceTrait> getTraits() {
-		List<SCMSourceTrait> traits = new ArrayList<>();
-		SCMSourceTrait branchTrait = new BranchDiscoveryTrait();
-		traits.add(branchTrait);
 		return traits;
 	}
+	
+	@DataBoundSetter
+    public void setTraits(List<SCMSourceTrait> traits) {
+        this.traits = SCMTrait.asSetList(traits);
+    }
 	
 	@Override
 	protected List<RefSpec> getRefSpecs() {
@@ -121,8 +113,6 @@ public class GitBlitSCMSource extends AbstractGitSCMSource {
 	@Extension
 	public static class DescriptorImpl extends SCMSourceDescriptor {
 
-		public static final String defaultIncludes = "*";
-        public static final String defaultExcludes = "";
         public static final String ANONYMOUS = "ANONYMOUS";
         public static final String SAME = "SAME";
         
