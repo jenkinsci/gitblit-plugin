@@ -13,6 +13,9 @@ import hudson.Extension;
 import jenkins.model.GlobalConfiguration;
 import net.sf.json.JSONObject;
 
+/**
+ * Represents the global settings of the Gitblit Organization plugin, accessible via Jenkins UI (Manage Jenkins -> Configure Systems)
+ */
 @Extension
 public class GitBlitConfiguration extends GlobalConfiguration {
 
@@ -27,7 +30,7 @@ public class GitBlitConfiguration extends GlobalConfiguration {
 	}
 	
 	@Override
-	public boolean configure (StaplerRequest req,JSONObject json) throws FormException {
+	public boolean configure(StaplerRequest req,JSONObject json) throws FormException {
 		req.bindJSON(this,json);
 		return true;
 	}

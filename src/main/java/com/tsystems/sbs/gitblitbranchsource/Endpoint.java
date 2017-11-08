@@ -11,12 +11,20 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 
+/**
+ * Represents a Gitblit instance to connect to.
+ */
 public class Endpoint extends AbstractDescribableImpl<Endpoint> {
 	private final String name;
 	private final String apiUri;
 	
+	/**
+	 * Construct an endpoint with the uri of the Gitblit instance and its alias.
+	 * @param apiUri The URL of the Gitblit instance.
+	 * @param name The alias for the Gitblit instance.
+	 */
 	@DataBoundConstructor
-	public Endpoint(String apiUri,String name){
+	public Endpoint(String apiUri, String name) {
 		this.apiUri = Util.fixEmptyAndTrim(apiUri);
 		this.name = Util.fixEmptyAndTrim(name);
 	}
@@ -29,6 +37,9 @@ public class Endpoint extends AbstractDescribableImpl<Endpoint> {
 		return name;
 	}
 	
+	/**
+	 * Endpoint descriptor.
+	 */
 	@Extension
 	public static class DescriptorImpl extends Descriptor<Endpoint> {
 

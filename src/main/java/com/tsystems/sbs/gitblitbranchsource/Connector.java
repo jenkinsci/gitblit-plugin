@@ -26,11 +26,18 @@ import hudson.security.ACL;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 
+/**
+ * Connection utilities.
+ */
 public class Connector {
 	
-   static List<DomainRequirement> gitblitDomainRequirements(String apiUri) {
-       return URIRequirementBuilder.fromUri(apiUri).build();
-   }
+	private Connector() {
+		throw new IllegalAccessError("Utility class");
+	}
+	
+	static List<DomainRequirement> gitblitDomainRequirements(String apiUri) {
+		return URIRequirementBuilder.fromUri(apiUri).build();
+	}
    
    /**
     * Resolves the specified scan credentials in the specified context for use against the specified API endpoint.

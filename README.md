@@ -31,6 +31,3 @@ that the project must contain a Jenkinsfile.
 Every time you click "Save" in the configuration screen, the scanning will be triggered. To trigger the scanning you can also
 click the "Scan Organization Now" action.
 
-Unsupported features: - Proxy: as per now, the plugin doesn't support working in a Jenkins instance behind a proxy.  
-                      - SCM events: For now, when a change in the SCM is triggered (like a commit) the plugin won't trigger a build. 
-                      It must be triggered manually.

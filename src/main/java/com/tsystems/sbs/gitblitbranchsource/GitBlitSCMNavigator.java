@@ -27,8 +27,15 @@ import jenkins.scm.api.SCMNavigatorDescriptor;
 import jenkins.scm.api.SCMSourceObserver;
 import jenkins.scm.api.SCMSourceObserver.ProjectObserver;
 
+/**
+ * Navigates the repositories of the Gitblit instances, 
+ * identifies the suitable ones 
+ * and then synchronizes the organization.
+ */
 public class GitBlitSCMNavigator extends SCMNavigator {
 
+	private static final int GIT_SUFFIX_LENGTH = 4;
+	
 	private final String gitblitUri;
 	private final String scanCredentialsId;
 	private final String checkoutCredentialsId;
@@ -37,29 +44,35 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 	private String includes;
 	private String excludes;
 
+	/**
+	 * Constructs a GitBlitSCMNavigator which scans Gitblit repositories.
+	 * @param gitblitUri The Gitblit instance uri.
+	 * @param scanCredentialsId Credentials to scan repositories.
+	 * @param checkoutCredentialsId Credentials to (Git) check out.
+	 */
 	@DataBoundConstructor
-	public GitBlitSCMNavigator (String gitblitUri, String scanCredentialsId, String checkoutCredentialsId){
+	public GitBlitSCMNavigator(String gitblitUri, String scanCredentialsId, String checkoutCredentialsId){
 		this.gitblitUri = Util.fixEmptyAndTrim(gitblitUri);
 		this.scanCredentialsId = scanCredentialsId;
 		this.checkoutCredentialsId = checkoutCredentialsId;
 	}
 
 	public String getIncludes() {
-		return includes != null ? includes : DescriptorImpl.defaultIncludes;
+		return includes != null ? includes : DescriptorImpl.DEFAULT_INCLUDES;
 	}
 
 	@DataBoundSetter
 	public void setIncludes(String includes) {
-		this.includes = includes.equals(DescriptorImpl.defaultIncludes) ? null : includes;
+		this.includes = includes.equals(DescriptorImpl.DEFAULT_INCLUDES) ? null : includes;
 	}
 
 	public String getExcludes() {
-		return excludes != null ? excludes : DescriptorImpl.defaultExcludes;
+		return excludes != null ? excludes : DescriptorImpl.DEFAULT_EXCLUDES;
 	}
 
 	@DataBoundSetter
 	public void setExcludes(String excludes) {
-		this.excludes = excludes.equals(DescriptorImpl.defaultExcludes) ? null : excludes;
+		this.excludes = excludes.equals(DescriptorImpl.DEFAULT_EXCLUDES) ? null : excludes;
 	}
 
 	public String getGitblitUri() {
@@ -109,17 +122,19 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		PrintStream logger = listener.getLogger();
 
 		if (gitblitUri != null) {
-			StandardUsernamePasswordCredentials credentials = (StandardUsernamePasswordCredentials) Connector.lookupScanCredentials((Item)observer.getContext(), gitblitUri, scanCredentialsId);
+			StandardUsernamePasswordCredentials credentials = 
+					(StandardUsernamePasswordCredentials) Connector.lookupScanCredentials(
+							(Item)observer.getContext(), 
+							gitblitUri, 
+							scanCredentialsId);
 			String user = null;
-			String password = "";
+			String password = null;
 			if (credentials != null) {
 				user = credentials.getUsername();
 				password = credentials.getPassword().getPlainText();
 				
 			}
 		
-			//TODO: configure proxy?
-				
 			logger.println("Connecting to Gitblit at " + gitblitUri);
 			//Connect to GitBlit and scan the repos for Jenkinsfile's
 			Map<String, RepositoryModel> response = RpcUtils.getRepositories(gitblitUri, user, password.toCharArray());
@@ -133,7 +148,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		
 				RepositoryModel repository = repoEntry.getValue();
 				String repoName = repository.name;
-				repoName = repoName.substring(0,repoName.length() - 4);//remove the .git suffix
+				repoName = repoName.substring(0,repoName.length() - GIT_SUFFIX_LENGTH);//remove the .git suffix
 		
 				//Filter the projects and add them only if they match the pattern
 				if(Pattern.compile(pattern).matcher(repoName).matches()) {
@@ -142,7 +157,14 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 					logger.println("Adding repository: " + repoEntry + " with name " + repoName);
 					ProjectObserver projectObserver = observer.observe(repoName);
 		
-					GitBlitSCMSource gitblitSource = new GitBlitSCMSource(getId() + repoName, gitblitUri, checkoutCredentialsId, scanCredentialsId, repoUrl, getIncludes(), getExcludes());
+					GitBlitSCMSource gitblitSource = 
+							new GitBlitSCMSource(getId() + repoName, 
+									gitblitUri, 
+									checkoutCredentialsId, 
+									scanCredentialsId, 
+									repoUrl, 
+									getIncludes(), 
+									getExcludes());
 		
 					projectObserver.addSource(gitblitSource);
 					projectObserver.complete();
@@ -151,18 +173,22 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 				}
 			}
 		} else {
-			logger.println("No Gitblit instance has been specified. A Gitblit server must be chosen from the ones specified at \"Manage Jenkins -> Configure System\" ");
+			logger.println("No Gitblit instance has been specified. A Gitblit server must be chosen "
+					+ "from the ones specified at \"Manage Jenkins -> Configure System\" ");
 		}
 
 		return;
 	}
 
+	/**
+	 * Our descriptor.
+	 */
 	@Symbol("gitblit")
 	@Extension
 	public static class DescriptorImpl extends SCMNavigatorDescriptor {
 
-		public static final String defaultIncludes = "*";
-        public static final String defaultExcludes = "";
+		public static final String DEFAULT_INCLUDES = "*";
+        public static final String DEFAULT_EXCLUDES = "";
 		public static final String SAME = GitBlitSCMSource.DescriptorImpl.SAME;
 
 		/**
@@ -188,14 +214,30 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 			return new GitBlitSCMNavigator(name, "", GitBlitSCMSource.DescriptorImpl.SAME);
 		}
 
+		/**
+		 * Method used by the UI to populate the scanCredentialsId element
+		 * @param context
+		 * @param gitblitUri
+		 * @return
+		 */
 		public ListBoxModel doFillScanCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String gitblitUri) {
 			return Connector.listScanCredentials(context, gitblitUri);
 		}
 
+		/**
+		 * Method used by the UI to populate the checkoutCredentialsId element
+		 * @param context
+		 * @param gitblitUri
+		 * @return
+		 */
 		public ListBoxModel doFillCheckoutCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String gitblitUri) {
 			return Connector.listCheckoutCredentials(context, gitblitUri);
 		}
 
+		/**
+		 * Method used by the UI to populate the gitblitUri element
+		 * @return
+		 */
 		public ListBoxModel doFillGitblitUriItems() {
 			ListBoxModel result = new ListBoxModel();
 			for (Endpoint e : GitBlitConfiguration.get().getEndpoints()) {

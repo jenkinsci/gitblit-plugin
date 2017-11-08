@@ -15,11 +15,15 @@ import hudson.Extension;
 import hudson.model.Item;
 import hudson.util.ListBoxModel;
 import jenkins.plugins.git.GitSCMSource;
+import jenkins.plugins.git.traits.BranchDiscoveryTrait;
 import jenkins.scm.api.SCMSourceDescriptor;
 import jenkins.scm.api.trait.SCMSourceTrait;
 import jenkins.scm.api.trait.SCMTrait;
 import jenkins.scm.impl.trait.WildcardSCMHeadFilterTrait;
 
+/**
+ * Represents a Git repository hosted in Gitblit and the criteria to retrieve its contents into Jenkins.
+ */
 public class GitBlitSCMSource extends GitSCMSource {
 
 	/**
@@ -35,8 +39,19 @@ public class GitBlitSCMSource extends GitSCMSource {
 	/** Credentials for GitBlit API; currently only supports username/password (personal access token). */
 	private final String scanCredentialsId;
 	
+	/**
+	 * Construct a GitblitSCMSource which represents a Gitblit repository.
+	 * @param id The source id given by the Gitblit organization plugin.
+	 * @param gitblitUri The Giblit instance to which the repository belongs.
+	 * @param checkoutCredentialsId The credentials to (Git)check out.
+	 * @param scanCredentialsId The credentials to scan the repositories' branches.
+	 * @param remote The repository uri in Gitblit.
+	 * @param includes The pattern to include branches.
+	 * @param excludes The pattern to exclude branches.
+	 */
 	@DataBoundConstructor
-	public GitBlitSCMSource(String id, String gitblitUri, String checkoutCredentialsId, String scanCredentialsId, String remote, String includes, String excludes) {
+	public GitBlitSCMSource(String id, String gitblitUri, String checkoutCredentialsId, 
+			String scanCredentialsId, String remote, String includes, String excludes) {
 		super(remote);
 		this.gitblitUri = gitblitUri;
 		this.checkoutCredentialsId = checkoutCredentialsId;
@@ -45,13 +60,12 @@ public class GitBlitSCMSource extends GitSCMSource {
 		
 		//SET TRAITS
 		//TODO: check which traits could be useful
-		List<SCMSourceTrait> traits = new ArrayList<>();
+		this.traits = new ArrayList<>();
 		
 		//Branch discovery trait: this allows the navigator to see and process branches
 		traits.add(new BranchDiscoveryTrait());
 		//Branch filtering trait
 		traits.add(new WildcardSCMHeadFilterTrait(includes,excludes));
-		setTraits(traits);
 	}
 	
 	@Override
@@ -109,6 +123,9 @@ public class GitBlitSCMSource extends GitSCMSource {
 	            new RefSpec("+refs/pull/*/head:refs/remotes/origin/pr/*")));
 	}
 	
+	/**
+	 * SCMSource descriptor.
+	 */
 	@Symbol("gitblit")
 	@Extension
 	public static class DescriptorImpl extends SCMSourceDescriptor {
@@ -130,14 +147,26 @@ public class GitBlitSCMSource extends GitSCMSource {
 			return result;
 		}
 		
+		/**
+		 * Method used by the UI to populate the checkoutCredentialsId element
+		 * @param context
+		 * @param apiUri
+		 * @return
+		 */
 		public ListBoxModel doFillCheckoutCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String apiUri) {
             return Connector.listCheckoutCredentials(context, apiUri);
         }
 
+		/**
+		 * Method used by the UI to populate the scanCredentialsId element
+		 * @param context
+		 * @param apiUri
+		 * @return
+		 */
         public ListBoxModel doFillScanCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String apiUri) {
             return Connector.listScanCredentials(context, apiUri);
         }
-		
+		        
 		//Jelly (GUI) method
 		public boolean isGitblitUriSelectable() {
 			return !GitBlitConfiguration.get().getEndpoints().isEmpty();
