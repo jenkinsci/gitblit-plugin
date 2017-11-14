@@ -128,7 +128,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 							gitblitUri, 
 							scanCredentialsId);
 			String user = null;
-			String password = null;
+			String password = "";
 			if (credentials != null) {
 				user = credentials.getUsername();
 				password = credentials.getPassword().getPlainText();
@@ -216,9 +216,9 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 
 		/**
 		 * Method used by the UI to populate the scanCredentialsId element
-		 * @param context
-		 * @param gitblitUri
-		 * @return
+		 * @param context The Jenkins context.
+		 * @param gitblitUri The Gitblit instance's URI.
+		 * @return The ListBoxModel which fills the UI element.
 		 */
 		public ListBoxModel doFillScanCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String gitblitUri) {
 			return Connector.listScanCredentials(context, gitblitUri);
@@ -226,9 +226,9 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 
 		/**
 		 * Method used by the UI to populate the checkoutCredentialsId element
-		 * @param context
-		 * @param gitblitUri
-		 * @return
+		 * @param context The Jenkins context.
+		 * @param gitblitUri The Gitblit instance's URI.
+		 * @return The ListBoxModel which fills the UI element.
 		 */
 		public ListBoxModel doFillCheckoutCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String gitblitUri) {
 			return Connector.listCheckoutCredentials(context, gitblitUri);
@@ -236,7 +236,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 
 		/**
 		 * Method used by the UI to populate the gitblitUri element
-		 * @return
+		 * @return The ListBoxModel which fills the UI element.
 		 */
 		public ListBoxModel doFillGitblitUriItems() {
 			ListBoxModel result = new ListBoxModel();

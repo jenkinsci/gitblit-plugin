@@ -149,9 +149,9 @@ public class GitBlitSCMSource extends GitSCMSource {
 		
 		/**
 		 * Method used by the UI to populate the checkoutCredentialsId element
-		 * @param context
-		 * @param apiUri
-		 * @return
+		 * @param context The Jenkins context.
+		 * @param apiUri The Gitblit URI.
+		 * @return The ListBoxModel which fills the UI element.
 		 */
 		public ListBoxModel doFillCheckoutCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String apiUri) {
             return Connector.listCheckoutCredentials(context, apiUri);
@@ -159,9 +159,9 @@ public class GitBlitSCMSource extends GitSCMSource {
 
 		/**
 		 * Method used by the UI to populate the scanCredentialsId element
-		 * @param context
-		 * @param apiUri
-		 * @return
+		 * @param context The Jenkins context.
+		 * @param apiUri The Gitblit URI.
+		 * @return The ListBoxModel which fills the UI element.
 		 */
         public ListBoxModel doFillScanCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String apiUri) {
             return Connector.listScanCredentials(context, apiUri);

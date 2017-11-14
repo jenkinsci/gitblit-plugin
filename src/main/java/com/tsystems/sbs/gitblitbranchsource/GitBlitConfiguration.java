@@ -14,7 +14,7 @@ import jenkins.model.GlobalConfiguration;
 import net.sf.json.JSONObject;
 
 /**
- * Represents the global settings of the Gitblit Organization plugin, accessible via Jenkins UI (Manage Jenkins -> Configure Systems)
+ * Represents the global settings of the Gitblit Organization plugin, accessible via Jenkins UI (Manage Jenkins - Configure Systems)
  */
 @Extension
 public class GitBlitConfiguration extends GlobalConfiguration {
