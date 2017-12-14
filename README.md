@@ -31,3 +31,6 @@ that the project must contain a Jenkinsfile.
 Every time you click "Save" in the configuration screen, the scanning will be triggered. To trigger the scanning you can also
 click the "Scan Organization Now" action.
 
+## Non-supported features
+
+Standalone Multibranch Pipeline projects with Gitblit Sources are not supported.
