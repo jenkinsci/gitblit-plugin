@@ -1,4 +1,4 @@
-# gitblit-branch-source-plugin
+# gitblit-plugin
 
 This plugin allows creating Organization Folders in Jenkins which scan Gitblit servers to create build 
 jobs according to the repositories and branches found. This greatly simplifies the management of 

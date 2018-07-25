@@ -1,4 +1,4 @@
-package com.tsystems.sbs.gitblitbranchsource;
+package com.tsystems.sbs.gitblit;
 
 import java.io.IOException;
 import java.io.PrintStream;

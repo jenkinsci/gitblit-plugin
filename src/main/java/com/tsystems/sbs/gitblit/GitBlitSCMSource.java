@@ -1,4 +1,4 @@
-package com.tsystems.sbs.gitblitbranchsource;
+package com.tsystems.sbs.gitblit;
 
 import java.util.ArrayList;
 import java.util.Arrays;

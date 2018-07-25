@@ -9,7 +9,7 @@
     <relativePath />
   </parent>
   <groupId>com.tsystems.sbs</groupId>
-  <artifactId>gitblit-branch-source</artifactId>
+  <artifactId>gitblit</artifactId>
   <version>1.2-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
@@ -24,7 +24,7 @@
     -->
   </properties>
   
-  <name>GitBlit Organization Plugin</name>
+  <name>GitBlit Plugin</name>
   <description>Pipeline-as-Code support for a whole GitBlit organization</description>
   <url />
 
@@ -47,9 +47,9 @@
   </developers>
   -->
   <scm>
-      <connection>scm:git:https://github.com/SoftwareBuildService/gitblit-branch-source-plugin.git</connection>
-      <developerConnection>scm:git:https://github.com/SoftwareBuildService/gitblit-branch-source-plugin.git</developerConnection>
-      <url>https://github.com/SoftwareBuildService/gitblit-branch-source-plugin</url>
+      <connection>scm:git:https://github.com/SoftwareBuildService/gitblit-plugin.git</connection>
+      <developerConnection>scm:git:https://github.com/SoftwareBuildService/gitblit-plugin.git</developerConnection>
+      <url>https://github.com/SoftwareBuildService/gitblit-plugin</url>
       <tag>HEAD</tag>
   </scm>
   <repositories>
