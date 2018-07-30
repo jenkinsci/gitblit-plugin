@@ -1,32 +1,34 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
 
-	<j:if test="${descriptor.gitblitUriSelectable}">
-        <f:entry title="API endpoint" field="gitblitUri">
-            <f:select/>
-        </f:entry>
-    </j:if>
-    <f:entry title="Scan credentials" field="scanCredentialsId">
-        <c:select/>
-    </f:entry>
-    <f:entry title="${%Repository name pattern}" field="pattern">
+	<j:choose>
+		<j:when test="${descriptor.gitblitUriSelectable}">
+	        <f:entry title="GitBlit Server" field="gitblitUri">
+	            <f:select/>
+	        </f:entry>
+	    </j:when>
+	    <j:otherwise>
+	    	<f:invisibleEntry>
+				<f:select field="gitblitUri"/>
+			</f:invisibleEntry>
+	    </j:otherwise>
+	</j:choose>
+    
+    <f:entry title="Credentials" field="credentialsId">
+    	<c:select checkMethod="post"/>
+	</f:entry>
+    
+    <f:entry title="Repository name pattern" field="pattern">
         <f:textbox default=".*"/>
     </f:entry>
+    
     <f:advanced>
-    <j:if test="${!descriptor.gitblitUriSelectable}">
-      <f:entry title="API endpoint" field="gitblitUri">
-        <f:select/>
-      </f:entry>
-    </j:if>
-    <f:entry title="Checkout credentials" field="checkoutCredentialsId">
-        <c:select default="${descriptor.SAME}"/>
-    </f:entry>
-    <f:entry title="Include branches" field="includes">
-      <f:textbox default="${descriptor.defaultIncludes}"/>
-    </f:entry>
-    <f:entry title="Exclude branches" field="excludes">
-      <f:textbox default="${descriptor.defaultExcludes}"/>
-    </f:entry>
+	    <f:entry title="Include branches" field="includes">
+	      <f:textbox default="${descriptor.defaultIncludes}"/>
+	    </f:entry>
+	    <f:entry title="Exclude branches" field="excludes">
+	      <f:textbox default="${descriptor.defaultExcludes}"/>
+	    </f:entry>
   </f:advanced>
   
 </j:jelly>

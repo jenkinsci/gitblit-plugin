@@ -1,11 +1,11 @@
 package com.tsystems.sbs.gitblit;
 
+import static hudson.model.Items.XSTREAM2;
+
 import java.net.Proxy;
 import java.util.List;
 
 import javax.annotation.CheckForNull;
-
-import org.jenkinsci.plugins.gitclient.GitClient;
 
 import com.cloudbees.plugins.credentials.CredentialsMatcher;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
@@ -19,6 +19,8 @@ import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 
 import hudson.ProxyConfiguration;
 import hudson.Util;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.model.Item;
 import hudson.model.Queue;
 import hudson.model.queue.Tasks;
@@ -31,27 +33,35 @@ import jenkins.model.Jenkins;
  */
 public class Connector {
 	
+	/**
+	 * Used for class and package name retrocompatibility.
+	 */
+	@Initializer(before = InitMilestone.PLUGINS_STARTED)
+	public static void addAliases() {
+        XSTREAM2.addCompatibilityAlias("com.tsystems.sbs.gitblitbranchsource.Connector", Connector.class);
+    }
+	
 	private Connector() {
 		throw new IllegalAccessError("Utility class");
 	}
 	
-	static List<DomainRequirement> gitblitDomainRequirements(String apiUri) {
-		return URIRequirementBuilder.fromUri(apiUri).build();
+	static List<DomainRequirement> gitblitDomainRequirements(String gitblitUri) {
+		return URIRequirementBuilder.fromUri(gitblitUri).build();
 	}
    
    /**
     * Resolves the specified scan credentials in the specified context for use against the specified API endpoint.
     *
     * @param context           the context.
-    * @param apiUri            the API endpoint.
-    * @param scanCredentialsId the credentials to resolve.
+    * @param gitblitUri            the API endpoint.
+    * @param credentialsId the credentials to resolve.
     * @return the {@link StandardCredentials} or {@code null}
     */
    @CheckForNull
-   public static StandardCredentials lookupScanCredentials(@CheckForNull Item context,
-                                                           @CheckForNull String apiUri,
-                                                           @CheckForNull String scanCredentialsId) {
-       if (Util.fixEmpty(scanCredentialsId) == null) {
+   public static StandardCredentials lookupCredentials(@CheckForNull Item context,
+                                                           @CheckForNull String gitblitUri,
+                                                           @CheckForNull String credentialsId) {
+       if (Util.fixEmpty(credentialsId) == null) {
            return null;
        } else {
            return CredentialsMatchers.firstOrNull(
@@ -61,38 +71,16 @@ public class Connector {
                    context instanceof Queue.Task
                            ? Tasks.getDefaultAuthenticationOf((Queue.Task) context)
                            : ACL.SYSTEM,
-                   gitblitDomainRequirements(apiUri)
+                   gitblitDomainRequirements(gitblitUri)
                ),
-               CredentialsMatchers.allOf(CredentialsMatchers.withId(scanCredentialsId), gitblitScanCredentialsMatcher())
+               CredentialsMatchers.allOf(CredentialsMatchers.withId(credentialsId), gitblitCredentialsMatcher())
            );
        }
    }
    
-   private static CredentialsMatcher gitblitScanCredentialsMatcher() {
+   private static CredentialsMatcher gitblitCredentialsMatcher() {
        // TODO OAuth credentials
-       return CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class));
-   }
-   
-   /**
-    * Populates a {@link ListBoxModel} with the scan credentials appropriate for the supplied context against the
-    * supplied API endpoint.
-    *
-    * @param context the context.
-    * @param apiUri  the api endpoint.
-    * @return a {@link ListBoxModel}.
-    */
-   public static ListBoxModel listScanCredentials(Item context, String apiUri) {
-       return new StandardListBoxModel()
-               .includeEmptyValue()
-               .includeMatchingAs(
-                       context instanceof Queue.Task
-                               ? Tasks.getDefaultAuthenticationOf((Queue.Task) context)
-                               : ACL.SYSTEM,
-                       context,
-                       StandardUsernameCredentials.class,
-                       gitblitDomainRequirements(apiUri),
-                       gitblitScanCredentialsMatcher()
-               );
+	   return CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class));
    }
    
    /**
@@ -100,22 +88,20 @@ public class Connector {
     * supplied API endpoint.
     *
     * @param context the context.
-    * @param apiUri  the api endpoint.
+    * @param gitblitUri  the gitblit server.
     * @return a {@link ListBoxModel}.
     */
-   public static ListBoxModel listCheckoutCredentials( Item context, String apiUri) {
-       StandardListBoxModel result = new StandardListBoxModel();
-       result.includeEmptyValue();
-       result.add("- same as scan credentials -", "SAME");
-       result.add("- anonymous -", "ANONYMOUS");
-       return result.includeMatchingAs(
-               context instanceof Queue.Task
-                       ? Tasks.getDefaultAuthenticationOf((Queue.Task) context)
-                       : ACL.SYSTEM,
-               context,
-               StandardUsernameCredentials.class,
-               gitblitDomainRequirements(apiUri),
-               GitClient.CREDENTIALS_MATCHER
+   public static ListBoxModel listCredentials( Item context, String gitblitUri) {
+       return new StandardListBoxModel()
+    		   .includeEmptyValue()
+    		   .includeMatchingAs(
+	               context instanceof Queue.Task
+	                       ? Tasks.getDefaultAuthenticationOf((Queue.Task) context)
+	                       : ACL.SYSTEM,
+	               context,
+	               StandardUsernameCredentials.class,
+	               gitblitDomainRequirements(gitblitUri),
+	               gitblitCredentialsMatcher()
        );
    }
    
