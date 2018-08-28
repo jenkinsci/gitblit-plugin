@@ -1,6 +1,4 @@
-package com.tsystems.sbs.gitblit;
-
-import static hudson.model.Items.XSTREAM2;
+package com.tsystems.sbs.gitblitbranchsource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,8 +12,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import hudson.Extension;
-import hudson.init.InitMilestone;
-import hudson.init.Initializer;
 import hudson.model.Item;
 import hudson.util.ListBoxModel;
 import jenkins.plugins.git.GitSCMSource;
@@ -38,62 +34,29 @@ public class GitBlitSCMSource extends GitSCMSource {
 	
 	private List<SCMSourceTrait> traits = new ArrayList<>();
 	
-	private transient String checkoutCredentialsId;
-	private transient String scanCredentialsId;
+	/** Credentials for actual clone; may be SSH private key. */
+	private final String checkoutCredentialsId;
 	/** Credentials for GitBlit API; currently only supports username/password (personal access token). */
-	private String credentialsId;
-	private String includes;
-	private String excludes;
+	private final String scanCredentialsId;
 	
 	/**
-	 * Used for class and package name retrocompatibility.
-	 */
-	@Initializer(before = InitMilestone.PLUGINS_STARTED)
-    public static void addAliases() {
-        XSTREAM2.addCompatibilityAlias("com.tsystems.sbs.gitblitbranchsource.GitBlitSCMSource", GitBlitSCMSource.class);
-    }
-	
-	/**
-	 * Used for field retrocompatibility.
-	 * @return this object.
-	 */
-	private Object readResolve() {
-		if (checkoutCredentialsId != null && !checkoutCredentialsId.isEmpty()) {
-			credentialsId = checkoutCredentialsId;
-		} else if (scanCredentialsId != null && !scanCredentialsId.isEmpty()) {
-			credentialsId = scanCredentialsId;
-		} else {
-			credentialsId = "";
-		}
-		
-		if (includes != null) {
-			includes = "*";
-		}
-		
-		if (excludes != null) {
-			excludes = "";
-		}
-		
-		return this;
-	}
-	
-	/**
-	 * Construct a GitblitSCMSource which represents a GitBlit repository.
-	 * @param id The source id given by the GitBlit organization plugin.
-	 * @param gitblitUri The GitBlit instance to which the repository belongs.
-	 * @param credentialsId The credentials to scan the repositories' branches.
-	 * @param remote The repository uri in GitBlit.
+	 * Construct a GitblitSCMSource which represents a Gitblit repository.
+	 * @param id The source id given by the Gitblit organization plugin.
+	 * @param gitblitUri The Giblit instance to which the repository belongs.
+	 * @param checkoutCredentialsId The credentials to (Git)check out.
+	 * @param scanCredentialsId The credentials to scan the repositories' branches.
+	 * @param remote The repository uri in Gitblit.
 	 * @param includes The pattern to include branches.
 	 * @param excludes The pattern to exclude branches.
 	 */
 	@DataBoundConstructor
-	public GitBlitSCMSource(String id, String gitblitUri, String credentialsId, String remote, String includes, String excludes) {
+	public GitBlitSCMSource(String id, String gitblitUri, String checkoutCredentialsId, 
+			String scanCredentialsId, String remote, String includes, String excludes) {
 		super(remote);
 		this.gitblitUri = gitblitUri;
-		this.credentialsId = credentialsId;
+		this.checkoutCredentialsId = checkoutCredentialsId;
+		this.scanCredentialsId = scanCredentialsId;
 		this.remote = remote;
-		this.includes = includes;
-		this.excludes = excludes;
 		
 		//SET TRAITS
 		//TODO: check which traits could be useful
@@ -107,7 +70,21 @@ public class GitBlitSCMSource extends GitSCMSource {
 	
 	@Override
 	public String getCredentialsId() {
-		return credentialsId;
+		if (DescriptorImpl.ANONYMOUS.equals(checkoutCredentialsId)) {
+			return null;
+		} else if (DescriptorImpl.SAME.equals(checkoutCredentialsId)) {
+			return scanCredentialsId;
+		} else {
+			return checkoutCredentialsId;
+		}
+	}
+	
+	public String getScanCredentialsId() {
+		return scanCredentialsId;
+	}
+	
+	public String getCheckoutCredentialsId() {
+		return checkoutCredentialsId;
 	}
 	
 	/**
@@ -153,6 +130,9 @@ public class GitBlitSCMSource extends GitSCMSource {
 	@Extension
 	public static class DescriptorImpl extends SCMSourceDescriptor {
 
+        public static final String ANONYMOUS = "ANONYMOUS";
+        public static final String SAME = "SAME";
+        
 		@Override
 		public String getDisplayName() {
 			return "GitBlit";
@@ -162,19 +142,29 @@ public class GitBlitSCMSource extends GitSCMSource {
 		public ListBoxModel doFillGitblitUriItems() {
 			ListBoxModel result = new ListBoxModel();
 			for(Endpoint e : GitBlitConfiguration.get().getEndpoints()) {
-				result.add(e.getName() == null ? e.getGitblitUri() : e.getName(), e.getGitblitUri());
+				result.add(e.getName() == null ? e.getApiUri() : e.getName(), e.getApiUri());
 			}
 			return result;
 		}
 		
 		/**
-		 * Method used by the UI to populate the credentialsId element
+		 * Method used by the UI to populate the checkoutCredentialsId element
 		 * @param context The Jenkins context.
-		 * @param gitblitUri The Gitblit URI.
+		 * @param apiUri The Gitblit URI.
 		 * @return The ListBoxModel which fills the UI element.
 		 */
-		public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String gitblitUri) {
-            return Connector.listCredentials(context, gitblitUri);
+		public ListBoxModel doFillCheckoutCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String apiUri) {
+            return Connector.listCheckoutCredentials(context, apiUri);
+        }
+
+		/**
+		 * Method used by the UI to populate the scanCredentialsId element
+		 * @param context The Jenkins context.
+		 * @param apiUri The Gitblit URI.
+		 * @return The ListBoxModel which fills the UI element.
+		 */
+        public ListBoxModel doFillScanCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String apiUri) {
+            return Connector.listScanCredentials(context, apiUri);
         }
 		        
 		//Jelly (GUI) method

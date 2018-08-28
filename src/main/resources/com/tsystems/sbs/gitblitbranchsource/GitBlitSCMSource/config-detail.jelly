@@ -5,28 +5,23 @@
   <!-- AFAIK, this jelly is instantiated when trying to create a lone multibranch pipeline project with a GitHub branch source 
   instead of a GitBlit organization. A GitBlit organization would contain multiple multibranch pipeline projects with GitBlit branch sources. -->
   
-  <j:choose>
-    <j:when test="${descriptor.gitblitUriSelectable}">
-	  <f:entry title="GitBlit Server" field="gitblitUri">
-	    <f:select/>
-	  </f:entry>
-    </j:when>
-    <j:otherwise>
-      <f:invisibleEntry>
-        <f:select field="gitblitUri"/>
-      </f:invisibleEntry>
-    </j:otherwise>
-  </j:choose>
-  
-  <f:entry title="Repository" field="remote">
-  	  <f:textbox/>
-  </f:entry>
-  
-  <f:entry title="Credentials" field="credentialsId">
+  <j:if test="${descriptor.gitblitUriSelectable}">
+    <f:entry title="API endpoint" field="gitblitUri">
+      <f:select/>
+    </f:entry>
+  </j:if>
+  <f:entry title="Scan credentials" field="scanCredentialsId">
     <c:select/>
   </f:entry>
-  
   <f:advanced>
+    <j:if test="${!descriptor.gitblitUriSelectable}">
+      <f:entry title="API endpoint" field="apiUri">
+        <f:select/>
+      </f:entry>
+    </j:if>
+    <f:entry title="Checkout credentials" field="checkoutCredentialsId">
+      <c:select default="${descriptor.SAME}"/>
+    </f:entry>
     <f:entry title="Include branches" field="includes">
       <f:textbox default="${descriptor.defaultIncludes}"/>
     </f:entry>

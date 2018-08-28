@@ -9,7 +9,7 @@
     <relativePath />
   </parent>
   <groupId>com.tsystems.sbs</groupId>
-  <artifactId>gitblit-branch-source</artifactId>
+  <artifactId>gitblit</artifactId>
   <version>1.2-SNAPSHOT</version>
   <packaging>hpi</packaging>
 

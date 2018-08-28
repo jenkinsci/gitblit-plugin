@@ -1,6 +1,4 @@
-package com.tsystems.sbs.gitblit;
-
-import static hudson.model.Items.XSTREAM2;
+package com.tsystems.sbs.gitblitbranchsource;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -21,8 +19,6 @@ import com.gitblit.utils.RpcUtils;
 
 import hudson.Extension;
 import hudson.Util;
-import hudson.init.InitMilestone;
-import hudson.init.Initializer;
 import hudson.model.Item;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
@@ -41,45 +37,24 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 	private static final int GIT_SUFFIX_LENGTH = 4;
 	
 	private final String gitblitUri;
-	private transient String scanCredentialsId;
-	private transient String checkoutCredentialsId;
-	private String credentialsId;
+	private final String scanCredentialsId;
+	private final String checkoutCredentialsId;
 	private String pattern = ".*";
 
 	private String includes;
 	private String excludes;
-	
-	/**
-	 * Used for class and package name retrocompatibility.
-	 */
-	@Initializer(before = InitMilestone.PLUGINS_STARTED)
-    public static void addAliases() {
-        XSTREAM2.addCompatibilityAlias("com.tsystems.sbs.gitblitbranchsource.GitBlitSCMNavigator", GitBlitSCMNavigator.class);
-    }
-	
-	/**
-	 * Used for field retrocompatibility.
-	 * @return this object.
-	 */
-	private Object readResolve() {
-		if (checkoutCredentialsId != null) {
-			credentialsId = checkoutCredentialsId;
-		} else if (scanCredentialsId != null) {
-			credentialsId = scanCredentialsId;
-		}
-		
-		return this;
-	}
 
 	/**
 	 * Constructs a GitBlitSCMNavigator which scans Gitblit repositories.
 	 * @param gitblitUri The Gitblit instance uri.
-	 * @param credentialsId Credentials to scan repositories and (Git) check out.
+	 * @param scanCredentialsId Credentials to scan repositories.
+	 * @param checkoutCredentialsId Credentials to (Git) check out.
 	 */
 	@DataBoundConstructor
-	public GitBlitSCMNavigator(String gitblitUri, String credentialsId){
+	public GitBlitSCMNavigator(String gitblitUri, String scanCredentialsId, String checkoutCredentialsId){
 		this.gitblitUri = Util.fixEmptyAndTrim(gitblitUri);
-		this.credentialsId = credentialsId;
+		this.scanCredentialsId = scanCredentialsId;
+		this.checkoutCredentialsId = checkoutCredentialsId;
 	}
 
 	public String getIncludes() {
@@ -108,8 +83,12 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		return pattern;
 	}
 
-	public String getCredentialsId() {
-		return credentialsId;
+	public String getScanCredentialsId() {
+		return scanCredentialsId;
+	}
+
+	public String getCheckoutCredentialsId() {
+		return checkoutCredentialsId;
 	}
 
 	@DataBoundSetter
@@ -121,7 +100,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 	public boolean isGitblitUriSelectable() {
 		return !GitBlitConfiguration.get().getEndpoints().isEmpty();
 	}
-	
+
 	@Override
 	protected String id() {
 		// Generate the ID of the thing being navigated.
@@ -144,10 +123,10 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 
 		if (gitblitUri != null) {
 			StandardUsernamePasswordCredentials credentials = 
-					(StandardUsernamePasswordCredentials) Connector.lookupCredentials(
+					(StandardUsernamePasswordCredentials) Connector.lookupScanCredentials(
 							(Item)observer.getContext(), 
 							gitblitUri, 
-							credentialsId);
+							scanCredentialsId);
 			String user = null;
 			String password = "";
 			if (credentials != null) {
@@ -181,7 +160,8 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 					GitBlitSCMSource gitblitSource = 
 							new GitBlitSCMSource(getId() + repoName, 
 									gitblitUri, 
-									credentialsId, 
+									checkoutCredentialsId, 
+									scanCredentialsId, 
 									repoUrl, 
 									getIncludes(), 
 									getExcludes());
@@ -209,6 +189,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 
 		public static final String DEFAULT_INCLUDES = "*";
         public static final String DEFAULT_EXCLUDES = "";
+		public static final String SAME = GitBlitSCMSource.DescriptorImpl.SAME;
 
 		/**
 		 * {@inheritDoc}
@@ -225,22 +206,32 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 
 		@Override
 		public String getDescription() {
-			return "Scans the specified GitBlit servers for repositories containing a Jenkinsfile.";
+			return "Scans a GitBlit organization for all repositories with a Jenkinsfile.";
 		}
 
 		@Override
 		public SCMNavigator newInstance(String name) {
-			return new GitBlitSCMNavigator(name, "credentials");
+			return new GitBlitSCMNavigator(name, "", GitBlitSCMSource.DescriptorImpl.SAME);
 		}
 
 		/**
-		 * Method used by the UI to populate the credentialsId element
+		 * Method used by the UI to populate the scanCredentialsId element
 		 * @param context The Jenkins context.
 		 * @param gitblitUri The Gitblit instance's URI.
 		 * @return The ListBoxModel which fills the UI element.
 		 */
-		public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String gitblitUri) {
-			return Connector.listCredentials(context, gitblitUri);
+		public ListBoxModel doFillScanCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String gitblitUri) {
+			return Connector.listScanCredentials(context, gitblitUri);
+		}
+
+		/**
+		 * Method used by the UI to populate the checkoutCredentialsId element
+		 * @param context The Jenkins context.
+		 * @param gitblitUri The Gitblit instance's URI.
+		 * @return The ListBoxModel which fills the UI element.
+		 */
+		public ListBoxModel doFillCheckoutCredentialsIdItems(@AncestorInPath Item context, @QueryParameter String gitblitUri) {
+			return Connector.listCheckoutCredentials(context, gitblitUri);
 		}
 
 		/**
@@ -250,7 +241,7 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		public ListBoxModel doFillGitblitUriItems() {
 			ListBoxModel result = new ListBoxModel();
 			for (Endpoint e : GitBlitConfiguration.get().getEndpoints()) {
-				result.add(e.getName() == null ? e.getGitblitUri() : e.getName(), e.getGitblitUri());
+				result.add(e.getName() == null ? e.getApiUri() : e.getName(), e.getApiUri());
 			}
 			return result;
 		}
