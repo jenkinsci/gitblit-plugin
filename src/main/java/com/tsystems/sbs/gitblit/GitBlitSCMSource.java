@@ -1,4 +1,6 @@
-package com.tsystems.sbs.gitblitbranchsource;
+package com.tsystems.sbs.gitblit;
+
+import static hudson.model.Items.XSTREAM2;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,6 +14,8 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import hudson.Extension;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.model.Item;
 import hudson.util.ListBoxModel;
 import jenkins.plugins.git.GitSCMSource;
@@ -40,12 +44,21 @@ public class GitBlitSCMSource extends GitSCMSource {
 	private final String scanCredentialsId;
 	
 	/**
-	 * Construct a GitblitSCMSource which represents a Gitblit repository.
-	 * @param id The source id given by the Gitblit organization plugin.
-	 * @param gitblitUri The Giblit instance to which the repository belongs.
+	 * Used for class and package name retrocompatibility.
+	 */
+	@Initializer(before = InitMilestone.PLUGINS_STARTED)
+    public static void addAliases() {
+        XSTREAM2.addCompatibilityAlias("com.tsystems.sbs.gitblitbranchsource.GitBlitSCMSource", GitBlitSCMSource.class);
+    }
+	
+	
+	/**
+	 * Construct a GitblitSCMSource which represents a GitBlit repository.
+	 * @param id The source id given by the GitBlit organization plugin.
+	 * @param gitblitUri The GitBlit instance to which the repository belongs.
 	 * @param checkoutCredentialsId The credentials to (Git)check out.
 	 * @param scanCredentialsId The credentials to scan the repositories' branches.
-	 * @param remote The repository uri in Gitblit.
+	 * @param remote The repository uri in GitBlit.
 	 * @param includes The pattern to include branches.
 	 * @param excludes The pattern to exclude branches.
 	 */

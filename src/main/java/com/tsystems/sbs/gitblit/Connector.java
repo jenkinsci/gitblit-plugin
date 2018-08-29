@@ -1,4 +1,6 @@
-package com.tsystems.sbs.gitblitbranchsource;
+package com.tsystems.sbs.gitblit;
+
+import static hudson.model.Items.XSTREAM2;
 
 import java.net.Proxy;
 import java.util.List;
@@ -19,6 +21,8 @@ import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 
 import hudson.ProxyConfiguration;
 import hudson.Util;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.model.Item;
 import hudson.model.Queue;
 import hudson.model.queue.Tasks;
@@ -30,6 +34,14 @@ import jenkins.model.Jenkins;
  * Connection utilities.
  */
 public class Connector {
+	
+	/**
+	 * Used for class and package name retrocompatibility.
+	 */
+	@Initializer(before = InitMilestone.PLUGINS_STARTED)
+	public static void addAliases() {
+        XSTREAM2.addCompatibilityAlias("com.tsystems.sbs.gitblitbranchsource.Connector", Connector.class);
+    }
 	
 	private Connector() {
 		throw new IllegalAccessError("Utility class");

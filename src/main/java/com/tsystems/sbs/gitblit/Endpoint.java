@@ -1,4 +1,6 @@
-package com.tsystems.sbs.gitblitbranchsource;
+package com.tsystems.sbs.gitblit;
+
+import static hudson.model.Items.XSTREAM2;
 
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
@@ -7,6 +9,8 @@ import org.kohsuke.stapler.QueryParameter;
 
 import hudson.Extension;
 import hudson.Util;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
@@ -17,6 +21,15 @@ import hudson.util.FormValidation;
 public class Endpoint extends AbstractDescribableImpl<Endpoint> {
 	private final String name;
 	private final String apiUri;
+	
+	/**
+	 * Used for class and package name retrocompatibility.
+	 */
+	@Initializer(before = InitMilestone.PLUGINS_STARTED)
+	public static void addAliases() {
+        XSTREAM2.addCompatibilityAlias("com.tsystems.sbs.gitblitbranchsource.Endpoint", Endpoint.class);
+    }
+	
 	
 	/**
 	 * Construct an endpoint with the uri of the Gitblit instance and its alias.

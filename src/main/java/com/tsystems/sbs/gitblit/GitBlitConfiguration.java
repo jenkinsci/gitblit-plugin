@@ -1,4 +1,6 @@
-package com.tsystems.sbs.gitblitbranchsource;
+package com.tsystems.sbs.gitblit;
+
+import static hudson.model.Items.XSTREAM2;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,6 +12,8 @@ import java.util.Set;
 import org.kohsuke.stapler.StaplerRequest;
 
 import hudson.Extension;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import jenkins.model.GlobalConfiguration;
 import net.sf.json.JSONObject;
 
@@ -18,6 +22,14 @@ import net.sf.json.JSONObject;
  */
 @Extension
 public class GitBlitConfiguration extends GlobalConfiguration {
+	
+	/**
+	 * Used for class and package name retrocompatibility.
+	 */
+	@Initializer(before = InitMilestone.PLUGINS_STARTED)
+	public static void addAliases() {
+        XSTREAM2.addCompatibilityAlias("com.tsystems.sbs.gitblitbranchsource.GitBlitConfiguration", GitBlitConfiguration.class);
+    }
 
 	public static GitBlitConfiguration get() {
 		return GlobalConfiguration.all().get(GitBlitConfiguration.class);

@@ -1,4 +1,6 @@
-package com.tsystems.sbs.gitblitbranchsource;
+package com.tsystems.sbs.gitblit;
+
+import static hudson.model.Items.XSTREAM2;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -19,6 +21,8 @@ import com.gitblit.utils.RpcUtils;
 
 import hudson.Extension;
 import hudson.Util;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.model.Item;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
@@ -43,6 +47,15 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 
 	private String includes;
 	private String excludes;
+	
+	/**
+	 * Used for class and package name retrocompatibility.
+	 */
+	@Initializer(before = InitMilestone.PLUGINS_STARTED)
+    public static void addAliases() {
+        XSTREAM2.addCompatibilityAlias("com.tsystems.sbs.gitblitbranchsource.GitBlitSCMNavigator", GitBlitSCMNavigator.class);
+    }
+	
 
 	/**
 	 * Constructs a GitBlitSCMNavigator which scans Gitblit repositories.
