@@ -20,6 +20,9 @@ import hudson.model.Item;
 import hudson.util.ListBoxModel;
 import jenkins.plugins.git.GitSCMSource;
 import jenkins.plugins.git.traits.BranchDiscoveryTrait;
+import jenkins.plugins.git.traits.CleanBeforeCheckoutTrait;
+import jenkins.plugins.git.traits.LocalBranchTrait;
+import jenkins.plugins.git.traits.PruneStaleBranchTrait;
 import jenkins.scm.api.SCMSourceDescriptor;
 import jenkins.scm.api.trait.SCMSourceTrait;
 import jenkins.scm.api.trait.SCMTrait;
@@ -79,6 +82,10 @@ public class GitBlitSCMSource extends GitSCMSource {
 		traits.add(new BranchDiscoveryTrait());
 		//Branch filtering trait
 		traits.add(new WildcardSCMHeadFilterTrait(includes,excludes));
+		traits.add(new LocalBranchTrait());
+		traits.add(new CleanBeforeCheckoutTrait());
+		traits.add(new PruneStaleBranchTrait());
+		traits.add(new MavenReleaseExclusionTrait());
 	}
 	
 	@Override
