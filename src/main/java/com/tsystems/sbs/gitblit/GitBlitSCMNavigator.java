@@ -157,7 +157,6 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 				Entry<String, RepositoryModel> repoEntry = repoIterator.next();
 				
 				String repoUrl = repoEntry.getKey();
-				logger.println("Found repository: " + repoUrl);
 		
 				RepositoryModel repository = repoEntry.getValue();
 				String repoName = repository.name;

@@ -69,6 +69,7 @@ public class GitBlitSCMSource extends GitSCMSource {
 	public GitBlitSCMSource(String id, String gitblitUri, String checkoutCredentialsId, 
 			String scanCredentialsId, String remote, String includes, String excludes) {
 		super(remote);
+		setId(id);
 		this.gitblitUri = gitblitUri;
 		this.checkoutCredentialsId = checkoutCredentialsId;
 		this.scanCredentialsId = scanCredentialsId;

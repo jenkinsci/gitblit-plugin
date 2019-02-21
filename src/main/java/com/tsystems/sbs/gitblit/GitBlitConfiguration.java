@@ -47,11 +47,11 @@ public class GitBlitConfiguration extends GlobalConfiguration {
 		return true;
 	}
 	
-	public List<Endpoint> getEndpoints() {
+	public synchronized List<Endpoint> getEndpoints() {
 		return endpoints == null ? Collections.<Endpoint>emptyList() : Collections.unmodifiableList(endpoints);
 	}
 	
-	public void setEndpoints(List<Endpoint> endpoints){
+	public synchronized void setEndpoints(List<Endpoint> endpoints){
 		endpoints = new ArrayList<Endpoint>(endpoints == null ? Collections.<Endpoint>emptyList() : endpoints);
 		//Remove duplicates and empty URLs
 		Set<String> apiUris = new HashSet<String>();
