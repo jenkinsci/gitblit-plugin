@@ -180,8 +180,6 @@ public class GitBlitSCMNavigator extends SCMNavigator {
 		
 					projectObserver.addSource(gitblitSource);
 					projectObserver.complete();
-				} else {
-					logger.println("Ignoring repo: " + repoEntry + " with name " + repoName);
 				}
 			}
 		} else {
