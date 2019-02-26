@@ -86,7 +86,6 @@ public class GitBlitSCMSource extends GitSCMSource {
 		traits.add(new LocalBranchTrait());
 		traits.add(new CleanBeforeCheckoutTrait());
 		traits.add(new PruneStaleBranchTrait());
-		traits.add(new MavenReleaseExclusionTrait());
 	}
 	
 	@Override
